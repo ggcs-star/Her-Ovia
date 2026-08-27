@@ -373,7 +373,7 @@
     </div>
 
     <div style="margin-top: 24px; padding: 20px 8px 8px; display: flex; justify-content: space-between; border-top: 1.5px solid #e2ecf5; color: #6b8a9c; font-size: 0.7rem;">
-        <span><i class="fas fa-copyright me-1"></i> 2025 Mahera Jewels</span>
+        <span><i class="fas fa-copyright me-1"></i> 2026 Her Ovia</span>
         <span>v3.0 · EN</span>
     </div>
 </div>

@@ -139,7 +139,7 @@
                                 <td class="px-2 py-2 text-center">
                                     @if($loop->first)
                                         @if($variant->image_url)
-                                            @php $s3Url = 'https://inventorydata-s3-bucket.s3.us-east-1.amazonaws.com/' . $variant->image_url; @endphp
+                                            @php $s3Url = 'https://her-ovia.s3.us-east-1.amazonaws.com/' . $variant->image_url; @endphp
                                             <img src="{{ $s3Url }}" class="w-8 h-8 object-cover rounded mx-auto">
                                         @else
                                             <span class="badge bg-info">Auto from gallery</span>
@@ -147,7 +147,7 @@
                                         <input type="hidden" name="variants[{{ $i }}][selected_gallery_image]" class="selected-gallery-image" value="{{ $variant->image_url ?? '' }}">
                                     @else
                                         @if($variant->image_url)
-                                            @php $s3Url = 'https://inventorydata-s3-bucket.s3.us-east-1.amazonaws.com/' . $variant->image_url; @endphp
+                                            @php $s3Url = 'https://her-ovia.s3.us-east-1.amazonaws.com/' . $variant->image_url; @endphp
                                             <img src="{{ $s3Url }}" class="w-8 h-8 object-cover rounded mx-auto mb-1">
                                         @endif
                                         <input type="file" name="variants[{{ $i }}][image_file]" class="w-full px-2 py-1 border border-gray-200 rounded-lg text-sm" accept="image/*">

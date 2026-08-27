@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Register | MAHERA JEWELS</title>
+    <title>Register | Her-Ovia</title>
     <style>
         * {
             margin: 0;
@@ -480,7 +480,7 @@
 <body>
     <div class="container">
         <div class="image-section">
-            <h1>Join Mahera Jewels Today</h1>
+            <h1>Join Her-Ovia Today</h1>
             <p>Create your account and unlock exclusive benefits, personalized recommendations, and faster checkout experience.</p>
             
             <div class="benefits">
@@ -517,7 +517,7 @@
         
         <div class="register-section">
             <div class="register-container">
-                <div class="logo">MAHERA JEWELS</div>
+                <div class="logo">Her Ovia</div>
                 <div class="register-header">
                     <h2>Create Account</h2>
                     <p>Join our community of happy shoppers</p>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Verify Email | MAHERA JEWELS</title>
+    <title>Verify Email | Her Ovia</title>
     <style>
         * {
             margin: 0;
@@ -597,7 +597,7 @@
         
         <div class="verify-section">
             <div class="verify-container">
-                <div class="logo">MAHERA JEWELS</div>
+                <div class="logo">Her Ovia</div>
                 
                 <div class="back-section">
                     <a href="/register" class="back-link">

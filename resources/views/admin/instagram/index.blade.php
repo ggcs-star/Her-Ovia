@@ -108,7 +108,7 @@
     <div class="how-to-section">
         <div class="section-header">
             <h2 class="section-title">How to Connect Instagram Business Account</h2>
-            <p class="section-subtitle">Follow these simple steps to connect your Instagram Business Account with Mahera Jewels Admin Panel.</p>
+            <p class="section-subtitle">Follow these simple steps to connect your Instagram Business Account with Her Ovia Admin Panel.</p>
         </div>
 
         <!-- Step Cards -->
