@@ -372,7 +372,7 @@
                 @endif
 
                 <div class="company-name">
-                    {{ $company->invoice_name ?? $company->name ?? 'Mahera Jewels' }}
+                    {{ $company->invoice_name ?? $company->name ?? 'Her Ovia' }}
                 </div>
 
                 <div class="company-address">
@@ -518,7 +518,7 @@
         <div class="invoice-footer">
             <div class="thank-you">Thank you </div>
             <div style="margin-top:4px;font-size:12px;">
-                {{ $company->name ?? 'Mahera Jewels' }} - {{ $company->city ?? '' }}
+                {{ $company->name ?? 'Her Ovia' }} - {{ $company->city ?? '' }}
             </div>
         </div>
 

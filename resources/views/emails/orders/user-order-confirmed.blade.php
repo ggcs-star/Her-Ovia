@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Order Confirmed | Mahera Jewels</title>
+    <title>Order Confirmed | Her Ovia</title>
 
     <style>
         /* reset + base */
@@ -272,7 +272,7 @@
 
     <!-- Brand header -->
     <div class="brand-header">
-        <h1>✨ <span>Mahera</span> Jewels</h1>
+        <h1>✨ <span>Her</span> Ovia</h1>
         <div class="tagline">timeless elegance, crafted for you</div>
     </div>
 
@@ -387,7 +387,7 @@
     <div class="footer-note">
 
         <p style="margin-bottom: 6px;">
-            <strong>Mahera Jewels</strong> · crafted with care
+            <strong>Her Ovia</strong> · crafted with care
         </p>
 
         <p style="margin: 0;">

@@ -126,7 +126,7 @@
     <div class="container">
         <div class="header">
             <h1>⚠️ Low Stock Alert</h1>
-            <p>Mahera Jewels Inventory Management System</p>
+            <p>Her Ovia Inventory Management System</p>
         </div>
         
         <div class="content">
@@ -186,7 +186,7 @@
         
         <div class="footer">
             <p>This is an automated alert from your Stock Management System.</p>
-            <p>&copy; {{ date('Y') }} Mahera Jewels Inventory Management</p>
+            <p>&copy; {{ date('Y') }} Her Ovia Inventory Management</p>
         </div>
     </div>
 </body>

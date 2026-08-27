@@ -42,7 +42,7 @@
         </main>
 
         <footer class="p-4 text-center text-sm text-gray-500 border-t bg-white">
-            &copy; {{ date('Y') }} Mahera Jewels. All rights reserved.
+            &copy; {{ date('Y') }} Her Ovia. All rights reserved.
         </footer>
 
     </div>

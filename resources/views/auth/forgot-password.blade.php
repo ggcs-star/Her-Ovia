@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Forgot Password | MAHERA JEWELS</title>
+    <title>Forgot Password | Her Ovia</title>
     <style>
         * {
             margin: 0;
@@ -511,7 +511,7 @@
         
         <div class="forgot-section">
             <div class="forgot-container">
-                <div class="logo">MAHERA JEWELS</div>
+                <div class="logo">Her Ovia</div>
                 
                 <div class="back-section">
                     <a href="/login" class="back-link">
