@@ -27,10 +27,19 @@
         /* IMAGE SECTION */
         .image-section {
             flex: 1;
-            background: linear-gradient(135deg, rgba(107, 26, 58, 0.85) 0%, rgba(75, 15, 38, 0.9) 100%), 
-                url('https://images.pexels.com/photos/1927259/pexels-photo-1927259.jpeg?auto=compress&cs=tinysrgb&w=1600');
-            background-size: cover;
-            background-position: center;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(107, 26, 58, 0.85) 0%,
+                    rgba(75, 15, 38, 0.90) 100%
+                ),
+                url('/assets/logo/image.png');
+
+            background-size: auto 100%;
+            background-position: right center;
+            background-repeat: no-repeat;
+
             display: flex;
             flex-direction: column;
             justify-content: center;
