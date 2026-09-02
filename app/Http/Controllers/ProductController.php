@@ -156,9 +156,8 @@ private function isUploadedFile($file): bool
         ]);
     }
 
-    public function create(Request $request)
+    public function create()
     {
-        
         $categories = Category::select('id', 'name', 'parent_id')
             ->orderBy('name')
             ->get();
@@ -168,18 +167,22 @@ private function isUploadedFile($file): bool
             ->get();
 
         $warehouses = Warehouse::where('status', 'active')
-        ->orderBy('city')
-        ->get();
+            ->orderBy('city')
+            ->get();
 
-         $variants = Variant::with('values')
-        ->where('is_active', 1)
-        ->get();
+        $variants = Variant::with('values')
+            ->where('is_active', 1)
+            ->get();
+            
+        $product = new Product();
+
         return view('products.create', compact(
-        'categories',
-        'suppliers',
-        'warehouses',
-        'variants'
-    ));
+            'categories',
+            'suppliers',
+            'warehouses',
+            'variants',
+            'product'  
+        ));
     }
     public function store(Request $request)
     {

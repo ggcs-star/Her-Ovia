@@ -224,7 +224,7 @@ Route::get('/inventory/details/{product}', [InventoryController::class, 'details
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         Route::get('/categories/{category}/details', [CategoryController::class, 'details'])->name('categories.details');
         Route::post('/categories/bulk-delete', [CategoryController::class, 'bulkDelete'])->name('categories.bulk-delete');
-    
+        Route::get('/get-subcategories', [CategoryController::class, 'getSubcategories'])->name('admin.get.subcategories');
         Route::get('/banners', [BannerController::class, 'index'])
             ->name('banners.index');
 

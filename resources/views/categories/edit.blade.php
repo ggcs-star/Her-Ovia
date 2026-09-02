@@ -82,15 +82,49 @@
                                   placeholder="Enter category description...">{{ old('description', $category->description) }}</textarea>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Parent Category</label>
-                        <select name="parent_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-1 focus:ring-[#8B2452] transition-all text-sm bg-white">
-                            <option value="">— None (Main Category) —</option>
-                            @foreach ($parents as $parent)
-                                <option value="{{ $parent->id }}" {{ old('parent_id', $category->parent_id) == $parent->id ? 'selected' : '' }}>
-                                    {{ $parent->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Category Hierarchy</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Main Category</label>
+                                <select id="mainCategory" name="main_category" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-1 focus:ring-[#8B2452] transition-all text-sm bg-white">
+                                    <option value="">None (Top Level)</option>
+                                    @foreach($mainCategories as $main)
+                                        <option value="{{ $main->id }}" {{ old('main_category', $mainCategoryId) == $main->id ? 'selected' : '' }}>
+                                            {{ $main->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Subcategory</label>
+                                <select id="subCategory" name="subcategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-1 focus:ring-[#8B2452] transition-all text-sm bg-white">
+                                    <option value="">None</option>
+                                    @foreach($subcategories as $sub)
+                                        <option value="{{ $sub->id }}" {{ old('subcategory', $subCategoryId) == $sub->id ? 'selected' : '' }}>
+                                            {{ $sub->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        
+                        {{-- ✅ CURRENT HIERARCHY SHOW --}}
+                        @if($currentMain || $currentParent)
+                            <div class="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                                <p class="text-xs text-gray-500">Current Hierarchy:</p>
+                                <p class="text-sm font-medium text-gray-700">
+                                    @if($currentMain)
+                                        {{ $currentMain->name }}
+                                        @if($currentParent)
+                                            → {{ $currentParent->name }}
+                                        @endif
+                                    @elseif($currentParent)
+                                        {{ $currentParent->name }}
+                                    @endif
+                                    → <span class="text-[#8B2452]">{{ $category->name }}</span>
+                                </p>
+                            </div>
+                        @endif
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Category Image</label>

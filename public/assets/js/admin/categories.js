@@ -1,15 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.category-row').forEach(row => {
-        row.addEventListener('click', () => {
-            const id = row.dataset.id;
-            const icon = row.querySelector('.toggle-icon');
-
-            document
-                .querySelectorAll('.parent-' + id)
-                .forEach(child => child.classList.toggle('d-none'));
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.category-row').forEach(function(row) {
+        row.addEventListener('click', function() {
+            var id = this.dataset.id;
+            var icon = this.querySelector('.toggle-icon');
 
             if (icon) {
-                icon.textContent = icon.textContent === '▶' ? '▼' : '▶';
+                var isExpanded = icon.textContent === '▼';
+                toggleAllChildren(id, !isExpanded);
+                icon.textContent = isExpanded ? '▶' : '▼';
             }
         });
     });
@@ -129,19 +127,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.toggle-icon').forEach(icon => {
-        icon.addEventListener('click', e => {
+function toggleAllChildren(parentId, show) {
+    var children = document.querySelectorAll('.parent-' + parentId);
+    children.forEach(function(child) {
+        if (show) {
+            child.classList.remove('d-none');
+        } else {
+            child.classList.add('d-none');
+            var childId = child.dataset.id;
+            if (childId) {
+                toggleAllChildren(childId, false);
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.toggle-icon').forEach(function(icon) {
+        icon.addEventListener('click', function(e) {
             e.stopPropagation();
 
-            const row = icon.closest('.category-row');
-            const id = row.dataset.id;
+            var row = this.closest('.category-row');
+            var id = row.dataset.id;
+            var isExpanded = this.textContent === '▼';
 
-            document
-                .querySelectorAll('.parent-' + id)
-                .forEach(child => child.classList.toggle('d-none'));
-
-            icon.textContent = icon.textContent === '▶' ? '▼' : '▶';
+            toggleAllChildren(id, !isExpanded);
+            this.textContent = isExpanded ? '▶' : '▼';
         });
     });
 });
@@ -249,3 +260,73 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+// ============================================
+// CATEGORY CREATE/EDIT PAGE - HIERARCHY DROPDOWNS
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const mainCategory = document.getElementById('mainCategory');
+    const subCategory = document.getElementById('subCategory');
+    const categoryPath = document.getElementById('categoryPath');
+
+    // Agar ye elements page pe nahi hain toh kuch mat karo
+    if (!mainCategory || !subCategory) {
+        return;
+    }
+
+    function getMainCategoryName(id) {
+        const option = mainCategory.querySelector('option[value="' + id + '"]');
+        return option ? option.textContent : '';
+    }
+
+    function getSubcategoryName(id) {
+        const option = subCategory.querySelector('option[value="' + id + '"]');
+        return option ? option.textContent : '';
+    }
+
+    function updatePath() {
+        const mainId = mainCategory.value;
+        const subId = subCategory.value;
+        let path = '';
+
+        if (mainId) {
+            path = getMainCategoryName(mainId);
+            if (subId) {
+                path += ' → ' + getSubcategoryName(subId);
+            }
+        }
+
+        if (categoryPath) {
+            categoryPath.textContent = path ? '📍 ' + path : '';
+        }
+    }
+
+    mainCategory.addEventListener('change', function() {
+        const categoryId = this.value;
+
+        subCategory.innerHTML = '<option value="">None</option>';
+
+        if (categoryId) {
+            fetch('/admin/get-subcategories?category_id=' + categoryId)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    data.forEach(function(category) {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        subCategory.appendChild(option);
+                    });
+                })
+                .catch(function(error) {
+                    console.error('Error loading subcategories:', error);
+                });
+        }
+
+        updatePath();
+    });
+
+    subCategory.addEventListener('change', updatePath);
+
+    updatePath();
+});

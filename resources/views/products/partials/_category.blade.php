@@ -12,30 +12,49 @@
     </div>
 
     <div class="p-5">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <!-- Main Category -->
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Category <span class="text-red-500">*</span>
                 </label>
                 <select id="mainCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20 transition-all text-sm bg-white">
                     <option value="">Select category</option>
+                    @php
+                        $selectedMain = old('main_category', $product->category?->parent?->parent?->id ?? $product->category?->parent?->id ?? '');
+                    @endphp
                     @foreach ($categories->whereNull('parent_id') as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        <option value="{{ $cat->id }}" {{ $selectedMain == $cat->id ? 'selected' : '' }}>
+                            {{ $cat->name }}
+                        </option>
                     @endforeach
                 </select>
                 <p class="text-xs text-gray-400 mt-1">Choose the primary category for this product.</p>
             </div>
 
+            <!-- Sub Category -->
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Sub Category
                 </label>
-                <select id="subCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20 transition-all text-sm bg-white" disabled>
+                <select id="subCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20 transition-all text-sm bg-white">
                     <option value="">Select sub category</option>
                 </select>
                 <p class="text-xs text-gray-400 mt-1">Available after selecting main category.</p>
             </div>
 
+            <!-- Sub-Sub Category -->
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Sub-Sub Category
+                </label>
+                <select id="subSubCategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20 transition-all text-sm bg-white">
+                    <option value="">Select sub-sub category</option>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Available after selecting sub category.</p>
+            </div>
+
+            <!-- Brand -->
             <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                     Brand
@@ -48,7 +67,7 @@
                 <p class="text-xs text-gray-400 mt-1">Optional – helps with filtering & search.</p>
             </div>
 
-            <!-- Hidden final category - EXACTLY as original, just moved inside -->
+            <!-- Hidden final category -->
             <input type="hidden"
                    name="category_id"
                    id="finalCategoryId"

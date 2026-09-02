@@ -113,22 +113,30 @@ public function show(string $slug): JsonResponse
         $platform = Platform::getOwnWebsite();
 
         $product = Product::query()
-            ->where('slug', $slug)
-            ->whereHas('platformListings', fn ($q) =>
-                $q->where('platform_id', $platform->id)->userVisible()
-            )
-            ->with([
-                'category:id,name','platformListings',
-                'variants' => function($q) {
-                    $q->select('id','product_id','variant_id','variant_value_id','quantity','selling_price','image_url','sku_suffix','status','color');
-                },
-                'variants.variant:id,name',
-                'variants.value:id,value',
-                'variants.platformPricings' => fn ($q) =>
-                    $q->where('status', 'active'),
-                'variants.platformPricings.platformProduct',
-            ])
-            ->firstOrFail();
+    ->where('slug', $slug)
+    ->whereHas('platformListings', fn ($q) =>
+        $q->where('platform_id', $platform->id)->userVisible()
+    )
+    ->with([
+        'category' => function($q) {
+            $q->select('id', 'name', 'parent_id');
+        },
+        'category.parent' => function($q) {
+            $q->select('id', 'name', 'parent_id');
+        },
+        'category.parent.parent' => function($q) {
+            $q->select('id', 'name');
+        },
+        'variants' => function($q) {
+            $q->select('id','product_id','variant_id','variant_value_id','quantity','selling_price','image_url','sku_suffix','status','color');
+        },
+        'variants.variant:id,name',
+        'variants.value:id,value',
+        'variants.platformPricings' => fn ($q) =>
+            $q->where('status', 'active'),
+        'variants.platformPricings.platformProduct',
+    ])
+    ->firstOrFail();
 
         // ✅ PO Data Fetch
         $poData = [];

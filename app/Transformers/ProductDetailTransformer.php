@@ -41,10 +41,18 @@ class ProductDetailTransformer
                     ->values()
                 : [],
 
-            'category' => [
-                'id' => $product->category?->id,
-                'name' => $product->category?->name,
-            ],
+            'category' => $product->category ? [
+                'id' => $product->category->id,
+                'name' => $product->category->name,
+                'parent' => $product->category->parent ? [
+                    'id' => $product->category->parent->id,
+                    'name' => $product->category->parent->name,
+                    'parent' => $product->category->parent->parent ? [
+                        'id' => $product->category->parent->parent->id,
+                        'name' => $product->category->parent->parent->name,
+                    ] : null,
+                ] : null,
+            ] : null,
 
             'stock' => $listing?->platform_stock ?? 0,
             'in_stock' => ($listing?->platform_stock ?? 0) > 0,
