@@ -81,13 +81,23 @@
                         <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Parent Category</label>
                         <div class="relative">
                             <select name="parent_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20 transition-all text-base bg-white appearance-none auto-submit">
-                                <option value="">All Parents</option>
-                                @foreach($parents as $parent)
-                                    <option value="{{ $parent->id }}" {{ request('parent_id') == $parent->id ? 'selected' : '' }}>
-                                        {{ $parent->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+    <option value="">All Parents</option>
+    @foreach($parents as $parent)
+        <option value="{{ $parent->id }}" {{ request('parent_id') == $parent->id ? 'selected' : '' }}>
+            {{ $parent->name }}
+        </option>
+        @foreach($parent->children as $child)
+            <option value="{{ $child->id }}" {{ request('parent_id') == $child->id ? 'selected' : '' }}>
+                &nbsp;&nbsp;— {{ $child->name }}
+            </option>
+            @foreach($child->children as $grandchild)
+                <option value="{{ $grandchild->id }}" {{ request('parent_id') == $grandchild->id ? 'selected' : '' }}>
+                    &nbsp;&nbsp;&nbsp;&nbsp;— {{ $grandchild->name }}
+                </option>
+            @endforeach
+        @endforeach
+    @endforeach
+</select>
                             <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
@@ -126,130 +136,83 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @forelse($categories as $category)
-                        <tr class="category-row hover:bg-gray-50 transition-colors" data-id="{{ $category->id }}">
-                            <td class="px-4 py-3">
-                                <input class="row-checkbox w-4 h-4 rounded border-gray-300 text-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20" type="checkbox" name="ids[]" value="{{ $category->id }}" form="bulkDeleteForm">
-                            </td>
-                            <td class="px-4 py-3 text-sm font-medium text-gray-500">{{ $category->serial }}</td>
-                            <td class="px-4 py-3">
-                                <div class="flex items-center gap-2">
-                                    @if($category->children->count())
-                                        <button type="button" class="toggle-icon w-5 h-5 rounded bg-gray-100 text-gray-600 text-xs flex items-center justify-center hover:bg-gray-200 transition-colors">
-                                            ▶
-                                        </button>
-                                    @endif
-                                    @if($category->image_url)
-                                        <img src="{{ $category->image_url }}" 
-                                            width="32" height="32" 
-                                            class="rounded border border-gray-200 object-cover category-image cursor-zoom-in shadow-sm" 
-                                            data-full="{{ $category->image_url }}">
-                                    @endif
-                                    <div>
-                                        <a href="{{ route('admin.categories.details', $category->id) }}" class="text-base font-bold text-gray-800 hover:text-[#8B2452] transition-colors">
-                                            {{ $category->name }}
-                                        </a>
-                                        @if($category->description)
-                                            <p class="text-xs text-gray-400 truncate max-w-[150px]">{{ Str::limit($category->description, 40) }}</p>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ $category->slug }}</span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $category->visibility == 'public' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600' }}">
-                                    {{ ucfirst($category->visibility) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $category->status == 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
-                                    {{ ucfirst($category->status) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-center">
-                                <div class="flex items-center justify-center gap-1.5">
-                                    <a href="{{ admin_route('categories.edit', $category) }}" class="p-1.5 text-gray-400 hover:text-[#8B2452] transition-colors rounded-lg hover:bg-indigo-50">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                        </svg>
-                                    </a>
-                                    <form action="{{ admin_route('categories.destroy', $category) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
+                    @php
+                        function renderCategoryRow($category, $level = 0, $parentId = null) {
+                            $padding = $level * 20;
+                            $parentClass = $parentId ? 'parent-' . $parentId : '';
+                            $isHidden = $parentId ? 'd-none' : '';
+                    @endphp
+        <tr class="category-row {{ $isHidden }} {{ $parentClass }}" data-id="{{ $category->id }}">
+            <td class="px-4 py-3">
+                <input class="row-checkbox w-4 h-4 rounded border-gray-300 text-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20" type="checkbox" name="ids[]" value="{{ $category->id }}" form="bulkDeleteForm">
+            </td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-500">{{ $category->serial ?? '#' }}</td>
+            <td class="px-4 py-3">
+                <div class="flex items-center gap-2" style="padding-left: {{ $padding }}px;">
+                    @if($category->children->count())
+                        <button type="button" class="toggle-icon w-5 h-5 rounded bg-gray-100 text-gray-600 text-xs flex items-center justify-center hover:bg-gray-200 transition-colors">
+                            ▶
+                        </button>
+                    @endif
+                    @if($category->image_url)
+                        <img src="{{ $category->image_url }}" width="28" height="28" class="rounded border border-gray-200 object-cover category-image cursor-zoom-in shadow-sm" data-full="{{ $category->image_url }}">
+                    @endif
+                    <a href="{{ route('admin.categories.details', $category->id) }}" class="text-sm font-semibold text-gray-700 hover:text-[#8B2452] transition-colors">
+                        {{ $category->name }}
+                    </a>
+                </div>
+            </td>
+            <td class="px-4 py-3">
+                <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ $category->slug }}</span>
+            </td>
+            <td class="px-4 py-3">
+                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $category->visibility == 'public' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600' }}">
+                    {{ ucfirst($category->visibility) }}
+                </span>
+            </td>
+            <td class="px-4 py-3">
+                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $category->status == 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
+                    {{ ucfirst($category->status) }}
+                </span>
+            </td>
+            <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                    <a href="{{ admin_route('categories.edit', $category) }}" class="p-1.5 text-gray-400 hover:text-[#8B2452] transition-colors rounded-lg hover:bg-indigo-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </a>
+                    <form action="{{ admin_route('categories.destroy', $category) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+            @php
+                    foreach($category->children as $child) {
+                        renderCategoryRow($child, $level + 1, $category->id);
+                    }
+                }
+            @endphp
 
-                        @foreach($category->children as $child)
-                            <tr class="subcategory-row d-none bg-gray-50/50 parent-{{ $category->id }}">
-                                <td class="px-4 py-3">
-                                    <input class="row-checkbox w-4 h-4 rounded border-gray-300 text-[#8B2452] focus:ring-2 focus:ring-[#8B2452]/20" type="checkbox" name="ids[]" value="{{ $child->id }}" form="bulkDeleteForm">
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-400">#{{ $child->id }}</td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2 pl-6">
-                                        @if($child->image_url)
-                                            <img src="{{ $child->image_url }}" 
-                                                width="28" height="28" 
-                                                class="rounded border border-gray-200 object-cover category-image cursor-zoom-in shadow-sm" 
-                                                data-full="{{ $child->image_url }}">
-                                        @endif
-                                        <a href="{{ route('admin.categories.details', $child->id) }}" class="text-sm font-semibold text-gray-700 hover:text-[#8B2452] transition-colors">
-                                            {{ $child->name }}
-                                        </a>
-                                    </div>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="text-sm text-gray-500">{{ $child->slug }}</span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $child->visibility == 'public' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600' }}">
-                                        {{ ucfirst($child->visibility) }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ $child->status == 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600' }}">
-                                        {{ ucfirst($child->status) }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <div class="flex items-center justify-center gap-1.5">
-                                        <a href="{{ admin_route('categories.edit', $child) }}" class="p-1.5 text-gray-400 hover:text-[#8B2452] transition-colors rounded-lg hover:bg-indigo-50">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </a>
-                                        <form action="{{ admin_route('categories.destroy', $child) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors rounded-lg hover:bg-red-50">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-4 py-12 text-center">
-                                <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                                </svg>
-                                <p class="text-gray-500 text-sm font-medium">No categories found matching your filters</p>
-                            </td>
-                        </tr>
-                    @endforelse
+            @forelse($categories as $category)
+                @php renderCategoryRow($category, 0, null); @endphp
+            @empty
+                <tr>
+                    <td colspan="7" class="px-4 py-12 text-center">
+                        <svg class="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                        </svg>
+                        <p class="text-gray-500 text-sm font-medium">No categories found matching your filters</p>
+                    </td>
+                </tr>
+            @endforelse
                 </tbody>
             </table>
         </div>

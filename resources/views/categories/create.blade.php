@@ -81,15 +81,37 @@
                                   placeholder="Enter category description...">{{ old('description') }}</textarea>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Parent Category</label>
-                        <select name="parent_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-1 focus:ring-[#8B2452] transition-all text-sm bg-white">
-                            <option value="">— None (Main Category) —</option>
-                            @foreach ($parents as $parent)
-                                <option value="{{ $parent->id }}" {{ old('parent_id') == $parent->id ? 'selected' : '' }}>
-                                    {{ $parent->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Category Hierarchy</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Main Category</label>
+                                <select id="mainCategory" name="main_category" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-1 focus:ring-[#8B2452] transition-all text-sm bg-white">
+                                    <option value="">None (Top Level)</option>
+                                    @foreach($mainCategories as $main)
+                                        <option value="{{ $main->id }}" {{ old('main_category') == $main->id ? 'selected' : '' }}>
+                                            {{ $main->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Subcategory</label>
+                                <select id="subCategory" name="subcategory" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#8B2452] focus:ring-1 focus:ring-[#8B2452] transition-all text-sm bg-white">
+                                    <option value="">None</option>
+                                    @if(old('main_category'))
+                                        @php
+                                            $subs = App\Models\Category::where('parent_id', old('main_category'))->where('status', 'active')->get();
+                                        @endphp
+                                        @foreach($subs as $sub)
+                                            <option value="{{ $sub->id }}" {{ old('subcategory') == $sub->id ? 'selected' : '' }}>
+                                                {{ $sub->name }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1" id="categoryPath"></p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">Category Image</label>
@@ -191,4 +213,5 @@
         </div>
     </form>
 </div>
+
 @endsection
