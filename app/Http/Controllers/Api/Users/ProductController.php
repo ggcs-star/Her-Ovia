@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\ProductClick;
 use Illuminate\Support\Facades\DB;
+use App\Services\Search\ProductSearchService;
 use Throwable;
 
 class ProductController extends Controller
@@ -547,147 +548,91 @@ public function bestSeller(): JsonResponse
     }
 }
 
-    public function searchSuggestions(Request $request): JsonResponse
-    {
+    public function searchSuggestions(
+        Request $request,
+        ProductSearchService $searchService
+    ): JsonResponse {
         try {
+            $query = trim((string) $request->get('q', ''));
 
-            $platform = Platform::getOwnWebsite();
-            $query = trim($request->get('q',''));
-
-            if(strlen($query) < 2){
+            if ($query === '') {
                 return response()->json([
-                    'success'=>true,
-                    'data'=>[
-                        'products'=>[],
-                        'categories'=>[],
-                        'brands'=>[]
-                    ]
+                    'success' => true,
+                    'data' => [
+                        'products' => [],
+                        'categories' => [],
+                        'subcategories' => [],
+                        'brands' => [],
+                    ],
                 ]);
             }
 
-            $products = Product::query()
-                ->select('id','name','slug','brand')
-
-                ->whereHas('platformListings', fn($q)=>
-                    $q->where('platform_id',$platform->id)->userVisible()
-                )
-
-                ->where('name','LIKE',"%{$query}%")
-                ->limit(5)
-                ->get();
-
-            $categories = Category::query()
-                ->select('id','name','slug')
-                ->where('name','LIKE',"%{$query}%")
-                ->limit(5)
-                ->get();
-
-            $brands = Product::query()
-                ->whereNotNull('brand')
-                ->where('brand','LIKE',"%{$query}%")
-                ->distinct()
-                ->limit(5)
-                ->pluck('brand');
-
             return response()->json([
-                'success'=>true,
-                'data'=>[
-                    'products'=>$products,
-                    'categories'=>$categories,
-                    'brands'=>$brands
-                ]
+                'success' => true,
+                'data' => $searchService->suggestions($query, 6),
             ]);
-
-        } catch(Throwable $e){
-
-            Log::error('Search suggestion error',[
-                'error'=>$e->getMessage()
+        } catch (Throwable $e) {
+            Log::error('Search suggestion error', [
+                'query' => $request->get('q'),
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'success'=>false,
-                'message'=>'Suggestion failed'
-            ],500);
+                'success' => false,
+                'message' => 'Suggestion failed',
+                'data' => [
+                    'products' => [],
+                    'categories' => [],
+                    'subcategories' => [],
+                    'brands' => [],
+                ],
+            ], 500);
         }
     }
 
-    public function search(Request $request): JsonResponse
-    {
+    public function search(
+        Request $request,
+        ProductSearchService $searchService
+    ): JsonResponse {
         try {
+            $query = trim((string) $request->get('q', ''));
 
-            $platform = Platform::getOwnWebsite();
-            $query = trim($request->get('q',''));
-
-            if($query === ''){
+            if ($query === '') {
                 return response()->json([
-                    'success'=>true,
-                    'data'=>[
-                        'products'=>[],
-                        'pagination'=>null
-                    ]
+                    'success' => true,
+                    'data' => [
+                        'products' => [],
+                        'pagination' => null,
+                    ],
                 ]);
             }
 
-            $products = Product::query()
-
-                ->whereHas('platformListings', fn($q)=>
-                    $q->where('platform_id',$platform->id)->userVisible()
-                )
-
-                ->where(function($q) use ($query){
-
-                    $q->where('name','LIKE',"%{$query}%")
-                    ->orWhere('brand','LIKE',"%{$query}%")
-                    ->orWhere('description','LIKE',"%{$query}%")
-                    ->orWhere('short_description','LIKE',"%{$query}%")
-                    ->orWhere('meta_title','LIKE',"%{$query}%")
-                    ->orWhere('meta_description','LIKE',"%{$query}%")
-
-                    ->orWhereHas('category', function($cat) use ($query){
-                        $cat->where('name','LIKE',"%{$query}%");
-                    });
-
-                })
-
-                ->with([
-                    'category:id,name',
-                    'platformListings' => fn($q)=>
-                        $q->where('platform_id',$platform->id)->userVisible(),
-                    'variants.platformPricings'=>fn($q)=>
-                        $q->where('status','active')
-                ])
-
-                ->select('id','name','slug','brand','image_url','product_price','gallery_images','sort_order')
-
-                ->orderBy('sort_order','asc')
-                ->latest()
-                ->paginate(12);
+            $products = $searchService->search($query, 12);
 
             return response()->json([
-                'success'=>true,
-                'data'=>[
-                    'products'=>$products->getCollection()
-                        ->map(fn($p)=>ProductListTransformer::transform($p)),
-                    'pagination'=>[
-                        'current_page'=>$products->currentPage(),
-                        'per_page'=>$products->perPage(),
-                        'total'=>$products->total(),
-                        'last_page'=>$products->lastPage()
-                    ]
-                ]
+                'success' => true,
+                'data' => [
+                    'products' => $products
+                        ->map(fn ($product) => ProductListTransformer::transform($product))
+                        ->values(),
+                    'pagination' => [
+                        'current_page' => 1,
+                        'per_page' => $products->count(),
+                        'total' => $products->count(),
+                        'last_page' => 1,
+                    ],
+                ],
             ]);
-
-        } catch(Throwable $e){
-
-            Log::error('Search error',[
-                'query'=>$request->q,
-                'error'=>$e->getMessage()
+        } catch (Throwable $e) {
+            Log::error('Search error', [
+                'query' => $request->q,
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
-                'success'=>false,
-                'message'=>'Search failed'
-            ],500);
+                'success' => false,
+                'message' => 'Search failed',
+            ], 500);
         }
     }
     
@@ -804,7 +749,7 @@ public function bestSeller(): JsonResponse
             return response()->json([
                 'success' => true,
                 'type' => 'subcategory',
-                'id' => $firstSubcategory->id  // ✅ FIXED
+                'id' => $firstSubcategory->id  
             ]);
         }
 

@@ -1,19 +1,29 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use App\Helpers\S3Helper;
+use Laravel\Scout\Searchable;
+
 class Category extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $fillable = [
-        'name', 'slug', 'description', 'parent_id',
-        'image_url', 'meta_title', 'meta_description',
-        'meta_keywords', 'sort_order', 'is_featured',
-        'visibility', 'status',
+        'name',
+        'slug',
+        'description',
+        'parent_id',
+        'image_url',
+        'meta_title',
+        'meta_description',
+        'meta_keywords',
+        'sort_order',
+        'is_featured',
+        'visibility',
+        'status',
     ];
 
     public function parent()
@@ -24,6 +34,30 @@ class Category extends Model
     public function children()
     {
         return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'category_id');
+    }
+
+    public function searchableAs(): string
+    {
+        return 'categories';
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+            'description' => $this->description,
+            'meta_title' => $this->meta_title,
+            'meta_description' => $this->meta_description,
+            'meta_keywords' => $this->meta_keywords,
+            'parent_id' => $this->parent_id,
+        ];
     }
 
     public function getImageUrlAttribute($value)
@@ -41,10 +75,4 @@ class Category extends Model
 
         return S3Helper::url($value);
     }
-    public function products()
-    {
-        return $this->hasMany(Product::class, 'category_id');
-    }
-
-
 }
