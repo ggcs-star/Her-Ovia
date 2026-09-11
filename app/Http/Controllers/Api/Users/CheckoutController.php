@@ -126,6 +126,14 @@ class CheckoutController extends Controller
                     'items.variant:id,image_url'
                 ])
                 ->firstOrFail();
+            $shippingAddress = UserAddress::where('id', $request->shipping_address_id)
+                ->where('user_id', $userId)
+                ->where('type', 'shipping')
+                ->firstOrFail();
+
+            $billingAddress = UserAddress::where('id', $request->billing_address_id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
 
             if ($cart->items->isEmpty()) {
                 abort(422, 'Cart is empty');
@@ -164,9 +172,9 @@ class CheckoutController extends Controller
                 'platform_fee' => $platformFee,
                 'total' => $total,
                 'coupon_code' => $request->coupon_code,
-                'shipping_address_id' => $request->shipping_address_id,
-                'billing_address_id' => $request->billing_address_id,
-                'payment_method_id' => $request->payment_method_id,
+                'shipping_address_id' => $shippingAddress->id,
+                'billing_address_id' => $billingAddress->id,
+                'payment_method' => 'cod',
             ]);
             // Update coupon usage after successful order creation
 if ($request->filled('coupon_code')) {
@@ -317,6 +325,14 @@ if ($coupon->one_time_per_user) {
                     'items.variant:id,image_url'
                 ])
                 ->firstOrFail();
+            $shippingAddress = UserAddress::where('id', $request->shipping_address_id)
+                ->where('user_id', $userId)
+                ->where('type', 'shipping')
+                ->firstOrFail();
+
+            $billingAddress = UserAddress::where('id', $request->billing_address_id)
+                ->where('user_id', $userId)
+                ->firstOrFail();
 
             if ($cart->items->isEmpty()) {
                 return response()->json([
@@ -356,8 +372,8 @@ if ($coupon->one_time_per_user) {
                 'client_ip' => $request->ip(),
                 'coupon_code' => $request->coupon_code,
                 'payment_meta' => [
-                    'shipping_address_id' => $request->shipping_address_id,
-                    'billing_address_id' => $request->billing_address_id,
+                    'shipping_address_id' => $shippingAddress->id,
+                    'billing_address_id' => $billingAddress->id,
                 ],
             ]);
 
@@ -517,26 +533,28 @@ if ($coupon->one_time_per_user) {
                 'total' => $total,
                 'shipping_address_id' => $meta['shipping_address_id'],
                 'billing_address_id' => $meta['billing_address_id'],
+                'payment_method' => 'razorpay',
+                'razorpay_order_id' => $payment->razorpay_order_id,
             ]);
-if ($payment->coupon_code) {
+            if ($payment->coupon_code) {
 
-    $coupon = Coupon::where('code', strtoupper($payment->coupon_code))->first();
+                $coupon = Coupon::where('code', strtoupper($payment->coupon_code))->first();
 
-    if ($coupon) {
+                if ($coupon) {
 
-        $coupon->increment('used_count');
-        $coupon->refresh();
+                    $coupon->increment('used_count');
+                    $coupon->refresh();
 
-        if (
-            $coupon->usage_limit &&
-            $coupon->used_count >= $coupon->usage_limit
-        ) {
-            $coupon->update([
-                'is_active' => false
-            ]);
-        }
-    }
-}
+                    if (
+                        $coupon->usage_limit &&
+                        $coupon->used_count >= $coupon->usage_limit
+                    ) {
+                        $coupon->update([
+                            'is_active' => false
+                        ]);
+                    }
+                }
+            }
             foreach ($cart->items as $item) {
 
                 OrderItem::create([

@@ -159,7 +159,19 @@
                             class="form-control"
                             style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;">
                     </div>
+                        <div class="col-md-2 mb-3">
+                            <label class="form-label fw-semibold"
+                                style="color: #4a5568; font-size: 13px;">
+                                Sort Order
+                            </label>
 
+                            <input type="number"
+                                name="sort_order"
+                                value="{{ old('sort_order', $banner->sort_order ?? 0) }}"
+                                min="0"
+                                class="form-control"
+                                style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;">
+                        </div>
                     <div class="col-md-2 mb-3">
                         <label class="form-label fw-semibold" style="color: #4a5568; font-size: 13px;">Status</label>
                         <select name="status" class="form-control" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px;">

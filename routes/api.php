@@ -144,6 +144,7 @@
         Route::post('/checkout/place-order', [CheckoutController::class, 'placeOrder']);
         Route::get('/user/addresses', [AddressController::class, 'index']);
         Route::post('/user/addresses', [AddressController::class, 'store']);
+        Route::get('/user/addresses/{id}', [AddressController::class, 'show']);
         Route::put('/user/addresses/{id}', [AddressController::class, 'update']);
         Route::delete('/user/addresses/{id}', [AddressController::class, 'destroy']);
         Route::put('/user/addresses/{id}/set-default', [AddressController::class, 'setDefault']);

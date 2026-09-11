@@ -36,7 +36,24 @@ class AddressController extends Controller
             return $this->errorResponse('Unable to fetch addresses');
         }
     }
+    public function show(int $addressId): JsonResponse
+    {
+        try {
+            $user = auth()->user();
 
+            $address = $this->findUserAddress($addressId, $user->id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->formatAddress($address)
+            ]);
+
+        } catch (Throwable $e) {
+            $this->logError('Get Address', $e, auth()->id(), $addressId);
+
+            return $this->errorResponse('Unable to fetch address');
+        }
+    }
 
     public function store(Request $request): JsonResponse
     {
