@@ -24,29 +24,40 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedData($request);
+        $banner = Banner::create($data);
+        if ($request->hasFile('image')) {
 
-        $folder = Str::slug($request->title ?: 'banner');
+            $image = $request->file('image');
 
-        $image = $request->file('image');
+            $filename = 'banner-' . $banner->id . '.' . $image->getClientOriginalExtension();
 
-        $data['image'] = S3Helper::storeAs(
-            $image,
-            "admin/banner/desktop/{$folder}",
-            $folder . '.' . $image->getClientOriginalExtension()
-        );
+            $imagePath = S3Helper::storeAs(
+                $image,
+                'admin/banner/desktop',
+                $filename
+            );
+
+            $banner->update([
+                'image' => $imagePath
+            ]);
+        }
 
         if ($request->hasFile('mobile_image')) {
 
             $mobile = $request->file('mobile_image');
 
-            $data['mobile_image'] = S3Helper::storeAs(
-                $mobile,
-                "admin/banner/mobile/{$folder}",
-                $folder . '-mobile.' . $mobile->getClientOriginalExtension()
-            );
-        }
+            $filename = 'banner-' . $banner->id . '-mobile.' . $mobile->getClientOriginalExtension();
 
-        Banner::create($data);
+            $mobilePath = S3Helper::storeAs(
+                $mobile,
+                'admin/banner/mobile',
+                $filename
+            );
+
+            $banner->update([
+                'mobile_image' => $mobilePath
+            ]);
+        }
 
         return redirect()
             ->route('admin.banners.index')
@@ -63,18 +74,19 @@ class BannerController extends Controller
         $data = $this->validatedData($request, true);
 
         if ($request->hasFile('image')) {
+
             if ($banner->getRawOriginal('image')) {
                 S3Helper::delete($banner->getRawOriginal('image'));
             }
 
             $file = $request->file('image');
 
-            $folder = Str::slug($request->title ?: ($banner->title ?: 'banner'));
+            $filename = 'banner-' . $banner->id . '.' . $file->getClientOriginalExtension();
 
             $data['image'] = S3Helper::storeAs(
                 $file,
-                "admin/banner/desktop/{$folder}",
-                $folder . '.' . $file->getClientOriginalExtension()
+                'admin/banner/desktop',
+                $filename
             );
         }
 
@@ -86,12 +98,12 @@ class BannerController extends Controller
 
             $file = $request->file('mobile_image');
 
-            $folder = Str::slug($request->title ?: ($banner->title ?: 'banner'));
+            $filename = 'banner-' . $banner->id . '-mobile.' . $file->getClientOriginalExtension();
 
             $data['mobile_image'] = S3Helper::storeAs(
                 $file,
-                "admin/banner/mobile/{$folder}",
-                $folder . '-mobile.' . $file->getClientOriginalExtension()
+                'admin/banner/mobile',
+                $filename
             );
         }
 

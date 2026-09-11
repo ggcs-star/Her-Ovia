@@ -1637,7 +1637,7 @@ variantSelect.addEventListener('change', function() {
     if (discountType === 'percent') {
         discountAmount = total * (discountValue / 100);
     } else {
-        discountAmount = discountValue;
+        discountAmount = discountValue * qty;
     }
 
     if (discountAmount > total) discountAmount = total;

@@ -78,7 +78,7 @@ class CartController extends Controller
                 'platform_id' => $platformProduct->platform_id,
             ]);
 
-                $unitPrice =$itemData['price']?? ($pricing->final_price ?? $pricing->price);
+                $unitPrice = $pricing->final_price ?? $pricing->price;
 
                 $existingQty = $cartItem->exists ? $cartItem->quantity : 0;
                 $newQty = $existingQty + $itemData['quantity'];
@@ -135,7 +135,7 @@ class CartController extends Controller
                 $request->quantity
             );
 
-            $unitPrice = $request->price?? ($pricing->final_price ?? $pricing->price);
+            $unitPrice = $pricing->final_price ?? $pricing->price;
 
             $cartItem->quantity = $request->quantity;
             $cartItem->price = $unitPrice;
@@ -305,11 +305,14 @@ class CartController extends Controller
 
     private function errorResponse(string $context, Throwable $e): JsonResponse
     {
+        Log::error($context, [
+            'message' => $e->getMessage(),
+            'exception' => $e,
+        ]);
+
         return response()->json([
             'success' => false,
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
+            'message' => 'Something went wrong. Please try again.',
         ], 500);
     }
 

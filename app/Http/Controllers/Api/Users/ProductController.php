@@ -24,6 +24,8 @@ class ProductController extends Controller
         $platform = Platform::getOwnWebsite();
 
         $products = Product::query()
+            ->where('products.status', 'active')
+            ->where('products.visibility', 'public')
             ->whereHas('platformListings', fn ($q) =>
                 $q->where('platform_id', $platform->id)->userVisible()
             )
@@ -114,10 +116,12 @@ public function show(string $slug): JsonResponse
         $platform = Platform::getOwnWebsite();
 
         $product = Product::query()
-    ->where('slug', $slug)
-    ->whereHas('platformListings', fn ($q) =>
-        $q->where('platform_id', $platform->id)->userVisible()
-    )
+            ->where('slug', $slug)
+            ->where('status', 'active')
+            ->where('visibility', 'public')
+            ->whereHas('platformListings', fn ($q) =>
+                $q->where('platform_id', $platform->id)->userVisible()
+            )
     ->with([
         'category' => function($q) {
             $q->select('id', 'name', 'parent_id');
@@ -221,17 +225,24 @@ public function show(string $slug): JsonResponse
     try {
         $platform = Platform::getOwnWebsite();
         
-        $product = Product::with([
-            'category:id,name',
-            'variants:id,product_id,variant_id,variant_value_id,quantity,selling_price,image_url,sku_suffix,status,color',
-            'variants.variant:id,name',
-            'variants.value:id,value',
-            'variants.platformPricings' => fn ($q) =>
-                $q->where('status', 'active'),
-            'variants.platformPricings.platformProduct',
-        ])->findOrFail($product_id);
+        $product = Product::query()
+            ->where('id', $product_id)
+            ->where('status', 'active')
+            ->where('visibility', 'public')
+            ->whereHas('platformListings', fn ($q) =>
+                $q->where('platform_id', $platform->id)->userVisible()
+            )
+            ->with([
+                'category:id,name',
+                'variants:id,product_id,variant_id,variant_value_id,quantity,selling_price,image_url,sku_suffix,status,color',
+                'variants.variant:id,name',
+                'variants.value:id,value',
+                'variants.platformPricings' => fn ($q) =>
+                    $q->where('status', 'active'),
+                'variants.platformPricings.platformProduct',
+            ])
+            ->firstOrFail();
 
-        // ✅ Purchase Order Data Fetch
         $poData = [];
         $purchaseItems = \App\Models\PurchaseOrderItem::with('variant', 'purchaseOrder')
             ->whereHas('purchaseOrder', function($query) {
@@ -249,7 +260,6 @@ public function show(string $slug): JsonResponse
             }
         }
 
-        // ✅ Attach PO data and calculate available stock
         $product->variants->each(function ($variant) use ($poData, $platform) {
             if (isset($poData[$variant->id])) {
                 $variant->po_quantity = $poData[$variant->id]['quantity'];
@@ -263,7 +273,6 @@ public function show(string $slug): JsonResponse
                 $variant->has_po = false;
             }
 
-            // ✅ Calculate total pushed quantity
             $totalPushed = 0;
             if ($variant->platformPricings) {
                 foreach ($variant->platformPricings as $pricing) {
@@ -273,7 +282,6 @@ public function show(string $slug): JsonResponse
                 }
             }
             
-            // ✅ Override quantity with available stock
             $variant->quantity = $variant->po_quantity - $totalPushed;
             if ($variant->quantity < 0) {
                 $variant->quantity = 0;
@@ -310,15 +318,9 @@ public function topSelling(): JsonResponse
     try {
 
         $platform = Platform::getOwnWebsite();
-
-        // Manual Top Selling Count
         $manualCount = Product::where('is_top_selling', 1)->count();
 
         if ($manualCount > 0) {
-
-            // ===========================
-            // Manual Top Selling
-            // ===========================
             $products = Product::query()
 
                 ->leftJoin('product_clicks', 'products.id', '=', 'product_clicks.product_id')
@@ -357,12 +359,6 @@ public function topSelling(): JsonResponse
                 ->get();
 
         } else {
-
-            // ===========================
-            // Automatic Top Selling
-            // (Most Clicked Products)
-            // ===========================
-
             $products = Product::query()
 
                 ->leftJoin('product_clicks', 'products.id', '=', 'product_clicks.product_id')
@@ -426,14 +422,9 @@ public function bestSeller(): JsonResponse
 
         $platform = Platform::getOwnWebsite();
 
-        // Manual Best Seller Count
         $manualCount = Product::where('is_best_seller', 1)->count();
 
         if ($manualCount > 0) {
-
-            // ===========================
-            // Manual Best Seller
-            // ===========================
             $products = Product::query()
 
                 ->leftJoin('product_clicks', 'products.id', '=', 'product_clicks.product_id')
@@ -470,10 +461,6 @@ public function bestSeller(): JsonResponse
                 ->get();
 
         } else {
-
-            // ===========================
-            // Automatic Best Seller
-            // ===========================
 
             $soldProducts = DB::table('order_items')
                 ->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -520,7 +507,6 @@ public function bestSeller(): JsonResponse
 
                 ->get()
 
-                // Keep same ranking as total sold
                 ->sortBy(function ($product) use ($soldProducts) {
                     return array_search($product->id, $soldProducts->toArray());
                 })
