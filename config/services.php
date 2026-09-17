@@ -67,4 +67,11 @@ return [
     'seller_id' => env('SP_API_SELLER_ID'),
 
 ],
+'shiprocket' => [
+    'base_url' => env('SHIPROCKET_BASE_URL'),
+    'email' => env('SHIPROCKET_EMAIL'),
+    'password' => env('SHIPROCKET_PASSWORD'),
+    'pickup_pincode' => env('SHIPROCKET_PICKUP_PINCODE'),
+    'default_weight' => env('SHIPROCKET_DEFAULT_WEIGHT', 0.5),
+],
 ];

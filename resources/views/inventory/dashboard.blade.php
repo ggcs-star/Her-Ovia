@@ -457,11 +457,12 @@
                         {{ $platform->display_name ?? ucfirst($platform->name) }}
                     </div>
                     <h4 class="fw-bold mb-0" style="color: #1a56db; font-size: 1.4rem;">
-                        @php
+                       @php
                             $summaryKey = match($name) {
-                                'website', 'online', 'own website' => 'total_website',
-                                'offline' => 'total_offline',
-                                default => 'total_' . $name
+                                'website', 'online', 'own website', 'our website', 'own_website' => 'total_website_available',
+                                'offline', 'ofline' => 'total_offline_available',
+                                'amazon' => 'total_amazon_available',
+                                default => 'total_' . $name . '_available'
                             };
                         @endphp
                         {{ $summary[$summaryKey] ?? 0 }}
@@ -773,7 +774,7 @@
                                             'offline', 'ofline' => 'offline',
                                             default => $name
                                         };
-                                        $soldKey = $name . '_sold';
+                                        $soldKey = $channelParam . '_sold';
                                     @endphp
                                     @if(!request('channel') || request('channel') == $channelParam)
                                         <td class="text-center" style="color: #E74C3C; font-weight: 600;">
@@ -885,7 +886,7 @@
                                                                     'offline', 'ofline' => 'offline',
                                                                     default => $name
                                                                 };
-                                                                $soldKey = $name . '_sold';
+                                                                $soldKey = $channelParam . '_sold';
                                                             @endphp
                                                             @if(!request('channel') || request('channel') == $channelParam)
                                                                 <td style="color: #E74C3C; font-weight:600;">

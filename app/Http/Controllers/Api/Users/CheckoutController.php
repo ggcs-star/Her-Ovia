@@ -12,12 +12,15 @@ use App\Models\DeliverySetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Payment;
+use App\Models\PlatformPricing;
+use App\Models\PlatformProduct;
 use Razorpay\Api\Api;
 use Razorpay\Api\Errors\SignatureVerificationError;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 use App\Services\ActivityLogService;
 use App\Jobs\SendNewOrderNotificationJob;
+use App\Services\ShiprocketService;
 class CheckoutController extends Controller
 {
     public function summary(Request $request): JsonResponse
@@ -38,21 +41,47 @@ class CheckoutController extends Controller
             }
 
             $subtotal = $cart->items->sum('subtotal');
-            $settings = DeliverySetting::getSettings();
 
-            if (!$settings) {
-                throw new \Exception('Delivery settings not configured');
-            }
-            $discount = $this->calculateDiscount($request->coupon_code, $subtotal);
+            $discount = $this->calculateDiscount(
+                $request->coupon_code,
+                $subtotal
+            );
 
             $afterDiscount = max($subtotal - $discount, 0);
 
-            $shipping = $settings->delivery_fee;
+            $settings = DeliverySetting::getSettings();
 
-            if ($settings->free_delivery_above && $afterDiscount >= $settings->free_delivery_above) {
-                $shipping = 0;
+            if (!$settings) {
+                throw new \RuntimeException('Delivery settings not configured.');
             }
 
+            $shippingAddressId = $request->input('shipping_address_id');
+
+            if (!$shippingAddressId) {
+                $shippingAddress = UserAddress::where('user_id', auth()->id())
+                    ->where('type', 'shipping')
+                    ->where('is_default', true)
+                    ->first();
+            } else {
+                $shippingAddress = UserAddress::where('id', $shippingAddressId)
+                    ->where('user_id', auth()->id())
+                    ->where('type', 'shipping')
+                    ->first();
+            }
+
+            $shipping = 0;
+            $shippingData = null;
+
+            if ($shippingAddress) {
+                $paymentMethod = $request->input('payment_method', 'cod');
+
+                $shippingData = $this->getShiprocketShipping(
+                    $shippingAddress,
+                    $paymentMethod
+                );
+
+                $shipping = (float) $shippingData['shipping'];
+            }
             $platformFee = $settings->platform_fee;
 
             $tax = ($afterDiscount * $settings->tax_percent) / 100;
@@ -104,7 +133,56 @@ class CheckoutController extends Controller
             ], 500);
         }
     }
+private function getShiprocketShipping(
+    UserAddress $shippingAddress,
+    string $paymentMethod
+): array {
+    $settings = DeliverySetting::getSettings();
 
+    if (!$settings) {
+        throw new \RuntimeException('Delivery settings not configured.');
+    }
+
+    try {
+        $shiprocket = app(ShiprocketService::class);
+
+        $shippingData = $shiprocket->checkServiceability(
+            $shippingAddress->postal_code,
+            $paymentMethod === 'cod'
+        );
+
+    } catch (\Throwable $e) {
+
+        // Shiprocket API/credentials error
+        // Use Delivery Settings delivery fee
+        return [
+            'serviceable' => true,
+            'shipping' => (float) $settings->delivery_fee,
+            'delivery_date' => null,
+            'source' => 'delivery_setting',
+        ];
+    }
+
+    // Shiprocket responded successfully,
+    // but pincode is not serviceable
+    if (!($shippingData['serviceable'] ?? false)) {
+        throw new \RuntimeException(
+            'Delivery is not available at this pincode.'
+        );
+    }
+
+    // Shipping charge missing from Shiprocket response
+    if (($shippingData['shipping'] ?? null) === null) {
+        return [
+            'serviceable' => true,
+            'shipping' => (float) $settings->delivery_fee,
+            'delivery_date' => null,
+            'source' => 'delivery_setting',
+        ];
+    }
+
+    return $shippingData;
+}
     public function placeOrder(Request $request): JsonResponse
     {
         $request->validate([
@@ -147,11 +225,13 @@ class CheckoutController extends Controller
 
             $afterDiscount = max($subtotal - $discount, 0);
 
-            $shipping = $settings->delivery_fee;
+            $shippingData = $this->getShiprocketShipping($shippingAddress, 'cod');
 
-            if ($settings->free_delivery_above && $afterDiscount >= $settings->free_delivery_above) {
-                $shipping = 0;
-            }
+            $shipping = (float) $shippingData['shipping'];
+
+            $estimatedDeliveryDate = !empty($shippingData['delivery_date'])
+                ? \Carbon\Carbon::parse($shippingData['delivery_date'])->toDateString()
+                : null;
 
             $platformFee = $settings->platform_fee;
 
@@ -168,6 +248,7 @@ class CheckoutController extends Controller
                 'subtotal' => round($subtotal, 2),
                 'tax' => round($tax, 2),
                 'shipping' => $shipping,
+                'estimated_delivery_date' => $estimatedDeliveryDate,
                 'discount' => round($discount, 2),
                 'platform_fee' => $platformFee,
                 'total' => $total,
@@ -199,6 +280,14 @@ if ($request->filled('coupon_code')) {
 
             foreach ($cart->items as $item) {
 
+                $image = $item->image
+                    ?? $item->variant->image_url
+                    ?? $item->product->image_url;
+
+                if ($image && str_starts_with($image, 'http')) {
+                    $image = ltrim(parse_url($image, PHP_URL_PATH), '/');
+                }
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
@@ -207,10 +296,13 @@ if ($request->filled('coupon_code')) {
                     'price' => $item->price,
                     'quantity' => $item->quantity,
                     'subtotal' => $item->subtotal,
-                    'image' => $item->variant->image_url
-                        ?? $item->product->image_url
-                        ?? $item->image,
+                    'image' => $image,
                 ]);
+                 \App\Models\PlatformPricing::where('product_variant_id', $item->product_variant_id)
+                    ->decrement('quantity', $item->quantity);
+
+                // \App\Models\PlatformProduct::where('product_variant_id', $item->product_variant_id)
+                    // ->decrement('platform_stock', $item->quantity);
             }
 
             // Activity Log
@@ -350,11 +442,16 @@ if ($coupon->one_time_per_user) {
 
             $afterDiscount = max($subtotal - $discount, 0);
 
-            $shipping = $settings->delivery_fee;
+            $shippingData = $this->getShiprocketShipping(
+                $shippingAddress,
+                'razorpay'
+            );
 
-            if ($settings->free_delivery_above && $afterDiscount >= $settings->free_delivery_above) {
-                $shipping = 0;
-            }
+            $shipping = (float) $shippingData['shipping'];
+
+            $estimatedDeliveryDate = !empty($shippingData['delivery_date'])
+                ? \Carbon\Carbon::parse($shippingData['delivery_date'])->toDateString()
+                : null;
 
             $platformFee = $settings->platform_fee;
 
@@ -374,6 +471,8 @@ if ($coupon->one_time_per_user) {
                 'payment_meta' => [
                     'shipping_address_id' => $shippingAddress->id,
                     'billing_address_id' => $billingAddress->id,
+                    'shipping' => $shipping,
+                    'estimated_delivery_date' => $estimatedDeliveryDate,
                 ],
             ]);
 
@@ -506,10 +605,17 @@ if ($coupon->one_time_per_user) {
 
             $afterDiscount = max($subtotal - $discount, 0);
 
-            $shipping = $settings->delivery_fee;
+            $meta = $payment->payment_meta;
 
-            if ($settings->free_delivery_above && $afterDiscount >= $settings->free_delivery_above) {
-                $shipping = 0;
+            if (!is_array($meta) || !array_key_exists('shipping', $meta)) {
+                throw new \RuntimeException('Shipping amount missing from payment.');
+            }
+
+            $shipping = (float) $meta['shipping'];
+            $estimatedDeliveryDate = $meta['estimated_delivery_date'] ?? null;
+
+            if ($shipping < 0) {
+                throw new \RuntimeException('Invalid shipping amount.');
             }
 
             $platformFee = $settings->platform_fee;
@@ -518,7 +624,7 @@ if ($coupon->one_time_per_user) {
 
             $total = round($afterDiscount + $shipping + $platformFee + $tax, 2);
 
-            $meta = $payment->payment_meta;
+            // $meta = $payment->payment_meta;
 
             $order = Order::create([
                 'user_id' => $userId,
@@ -528,6 +634,7 @@ if ($coupon->one_time_per_user) {
                 'subtotal' => $subtotal,
                 'tax' => $tax,
                 'shipping' => $shipping,
+                'estimated_delivery_date' => $estimatedDeliveryDate,
                 'discount' => $discount,
                 'platform_fee' => $platformFee,
                 'total' => $total,
@@ -557,18 +664,29 @@ if ($coupon->one_time_per_user) {
             }
             foreach ($cart->items as $item) {
 
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item->product_id,
-                    'variant_id' => $item->product_variant_id,
-                    'product_name' => $item->product->name ?? 'Product',
-                    'price' => $item->price,
-                    'quantity' => $item->quantity,
-                    'subtotal' => $item->subtotal,
-                    'image' => $item->variant->image_url
-                        ?? $item->product->image_url
-                        ?? $item->image
-                ]);
+                $image = $item->image
+                    ?? $item->variant->image_url
+                    ?? $item->product->image_url;
+
+                        if ($image && str_starts_with($image, 'http')) {
+                            $image = ltrim(parse_url($image, PHP_URL_PATH), '/');
+                        }
+
+                        OrderItem::create([
+                            'order_id' => $order->id,
+                            'product_id' => $item->product_id,
+                            'variant_id' => $item->product_variant_id,
+                            'product_name' => $item->product->name ?? 'Product',
+                            'price' => $item->price,
+                            'quantity' => $item->quantity,
+                            'subtotal' => $item->subtotal,
+                            'image' => $image,
+                        ]);
+                \App\Models\PlatformPricing::where('product_variant_id', $item->product_variant_id)
+                    ->decrement('quantity', $item->quantity);
+
+                // \App\Models\PlatformProduct::where('product_variant_id', $item->product_variant_id)
+                //     ->decrement('platform_stock', $item->quantity);
             }
 
             $payment->update([

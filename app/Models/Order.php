@@ -16,6 +16,7 @@ class Order extends Model
     'subtotal',
     'tax',
     'shipping',
+    'estimated_delivery_date',
     'platform_fee',
     'discount',
     'total',
@@ -62,5 +63,7 @@ class Order extends Model
     {
         return $this->belongsTo(UserAddress::class,'billing_address_id');
     }
-
+    protected $casts = [
+        'estimated_delivery_date' => 'date',
+    ];
 }

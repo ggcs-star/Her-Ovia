@@ -25,13 +25,19 @@ class InventoryController extends Controller
     }
 
     private function getWebsitePlatformId()
-    {
-        $platform = Platform::where('display_name', 'Our Website')->first();
-        if (!$platform) {
-            throw new \Exception('Website platform not found. Please check platforms table.');
-        }
-        return $platform->id;
+{
+    $platform = Platform::where('display_name', 'Our Website')
+        ->orWhere('display_name', 'own_website')
+        ->orWhere('display_name', 'Own Website')
+        ->orWhere('display_name', 'Website')
+        ->orWhere('name', 'own_website')
+        ->first();
+    
+    if (!$platform) {
+        throw new \Exception('Website platform not found. Please check platforms table.');
     }
+    return $platform->id;
+}
 
 public function dashboard(Request $request)
     {
@@ -96,14 +102,15 @@ public function dashboard(Request $request)
 
             $poQty = PurchaseOrderItem::where('product_variant_id', $variant->id)->sum('quantity');
 
-            // ✅ WEBSITE - PlatformPricing se fetch
-            $websitePushed = PlatformPricing::where('product_variant_id', $variant->id)
+            $websitePushed = PlatformProduct::where('product_variant_id', $variant->id)
+                ->where('platform_id', $websitePlatformId)
+                ->sum('platform_stock');
+
+            $websiteAvailable = PlatformPricing::where('product_variant_id', $variant->id)
                 ->whereHas('platformProduct', function($q) use ($websitePlatformId) {
                     $q->where('platform_id', $websitePlatformId);
                 })
                 ->sum('quantity');
-
-            // ✅ OFFLINE - PlatformPricing se fetch
            $offlinePushed = PlatformProduct::where('product_variant_id', $variant->id)
                 ->where('platform_id', $offlinePlatformId)
                 ->sum('platform_stock');
@@ -119,7 +126,8 @@ public function dashboard(Request $request)
 
             $amazonSold = AmazonOrderItem::where('product_variant_id', $variant->id)
                 ->sum('quantity_ordered');
-            $websiteAvailable = max(0, $websitePushed - $websiteSold);
+            
+            $websiteAvailable = max(0, $websiteAvailable);
             $offlineAvailable = max(0, $offlinePushed - $offlineSold);
             $amazonAvailable = max(0, $amazonPushed - $amazonSold);
 
@@ -232,6 +240,9 @@ foreach ($inventoryData as $item) {
         'total_website'       => $totalWebsite,
         'total_offline'       => $totalOffline,
         'total_amazon'        => $totalAmazon,
+        'total_website_available' => max(0, $totalWebsite - $totalWebsiteSold),
+        'total_offline_available' => max(0, $totalOffline - $totalOfflineSold),
+        'total_amazon_available'  => max(0, $totalAmazon - $totalAmazonSold),
 
         'total_website_sold'  => $totalWebsiteSold,
         'total_offline_sold'  => $totalOfflineSold,
@@ -339,8 +350,11 @@ foreach ($inventoryData as $item) {
             $poQty = PurchaseOrderItem::where('product_variant_id', $variant->id)
                 ->sum('quantity');
 
-            // Website Push
-            $websitePush = PlatformPricing::where('product_variant_id', $variant->id)
+            $websitePush = PlatformProduct::where('product_variant_id', $variant->id)
+                ->where('platform_id', $websitePlatformId)
+                ->sum('platform_stock');
+
+            $websiteAvailableDetail = PlatformPricing::where('product_variant_id', $variant->id)
                 ->whereHas('platformProduct', function ($q) use ($websitePlatformId) {
                     $q->where('platform_id', $websitePlatformId);
                 })

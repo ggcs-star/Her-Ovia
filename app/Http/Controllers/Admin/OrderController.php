@@ -235,36 +235,19 @@ public function index(Request $request)
         ));
     }
 
-
     public function show($id)
-    {
-        $amazonOrder = AmazonOrder::with('items')->find($id);
-        if ($amazonOrder) {
-            return view('admin.orders.show-amazon', compact('amazonOrder'));
-        }
+{
+    $order = Order::with([
+        'items.product',
+        'items.variant',
+        'user',
+        'shippingAddress',
+        'billingAddress',
+        'payment'
+    ])->findOrFail($id);
 
-        $order = Order::with([
-            'items.product',
-            'items.variant',
-            'user',
-            'shippingAddress',
-            'billingAddress',
-            'payment'
-        ])->findOrFail($id);
-
-        $order->items->transform(function ($item) {
-            if ($item->image && !str_starts_with($item->image, 'http')) {
-                $item->image = S3Helper::url($item->image);
-            } elseif ($item->variant && $item->variant->image_url && !str_starts_with($item->variant->image_url, 'http')) {
-                $item->image = S3Helper::url($item->variant->image_url);
-            } elseif ($item->product && $item->product->image_url && !str_starts_with($item->product->image_url, 'http')) {
-                $item->image = S3Helper::url($item->product->image_url);
-            }
-            return $item;
-        });
-
-        return view('admin.orders.show', compact('order'));
-    }
+    return view('admin.orders.show', compact('order'));
+}
 
     public function updateStatus(Request $request, $id)
     {

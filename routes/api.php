@@ -19,7 +19,9 @@
     use App\Http\Controllers\Api\CommentController;
     use App\Http\Controllers\InstagramController;
     use App\Http\Controllers\Api\Users\PageImpressionController;
-
+    use App\Http\Controllers\Api\Users\ShippingController;
+    Route::post('/shipping/check', [ShippingController::class, 'check'])
+    ->middleware('throttle:30,1');
 
     Route::post('/page-impression', [PageImpressionController::class, 'store']);
     Route::get('/instagram/reels', [InstagramController::class, 'reels']);

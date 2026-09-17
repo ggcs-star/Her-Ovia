@@ -65,6 +65,7 @@ class OrderController extends Controller
                 },
                 'items.product:id,image_url,gallery_images', 
                 'items.variant:id,image_url'
+                
             ])
             ->where('user_id', auth()->id())
             ->findOrFail($orderId);
