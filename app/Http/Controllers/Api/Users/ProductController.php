@@ -83,10 +83,7 @@ class ProductController extends Controller
                     }
                 }
                 
-                $variant->quantity = $variant->po_quantity - $totalPushed;
-                if ($variant->quantity < 0) {
-                    $variant->quantity = 0;
-                }
+                $variant->quantity = max(0, $totalPushed);
                 $variant->pushed_quantity = $totalPushed;
             });
         });
@@ -185,11 +182,8 @@ public function show(string $slug): JsonResponse
                 }
             }
             
-            // ✅ IMPORTANT: Override quantity with available stock
-            $variant->quantity = $variant->po_quantity - $totalPushed;
-            if ($variant->quantity < 0) {
-                $variant->quantity = 0;
-            }
+            // ✅ Website ka actual available stock = platform_pricing.quantity
+            $variant->quantity = max(0, $totalPushed);
             $variant->pushed_quantity = $totalPushed;
 
             // ✅ Debug log
@@ -282,10 +276,7 @@ public function show(string $slug): JsonResponse
                 }
             }
             
-            $variant->quantity = $variant->po_quantity - $totalPushed;
-            if ($variant->quantity < 0) {
-                $variant->quantity = 0;
-            }
+            $variant->quantity = max(0, $totalPushed);
             $variant->pushed_quantity = $totalPushed;
         });
 

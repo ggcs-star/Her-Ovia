@@ -57,7 +57,11 @@ class CartController extends Controller
 
             foreach ($request->items as $itemData) {
 
-            $platformProduct = $this->getPlatformProduct($itemData['product_id']);
+            $platformProduct = $this->getPlatformProduct(
+                $itemData['product_id'],
+                null,
+                $itemData['variant_id'] ?? null
+            );
             
             $variantId = $itemData['variant_id'] ?? null;
                 if ($variantId === null) {
@@ -78,7 +82,9 @@ class CartController extends Controller
                 'platform_id' => $platformProduct->platform_id,
             ]);
 
-                $unitPrice = $pricing->final_price ?? $pricing->price;
+                $unitPrice = isset($itemData['price'])
+                    ? (float) $itemData['price']
+                    : (float) ($pricing->final_price ?? $pricing->price);
 
                 $existingQty = $cartItem->exists ? $cartItem->quantity : 0;
                 $newQty = $existingQty + $itemData['quantity'];
@@ -216,12 +222,20 @@ class CartController extends Controller
             ->firstOrFail();
     }
 
-    private function getPlatformProduct(int $productId, ?int $platformId = null): PlatformProduct
+    private function getPlatformProduct(int $productId, ?int $platformId = null, ?int $variantId = null): PlatformProduct
     {
-        return PlatformProduct::where('product_id', $productId)
+        $query = PlatformProduct::where('product_id', $productId)
             ->when($platformId, fn ($q) => $q->where('platform_id', $platformId))
-            ->userVisible()
-            ->firstOrFail();
+            ->when($variantId, fn ($q) => $q->where('product_variant_id', $variantId))
+            ->userVisible();
+
+        $product = $query->first();
+
+        if (!$product) {
+            throw new \Exception("Platform product not found for product_id: {$productId}, variant_id: {$variantId}");
+        }
+
+        return $product;
     }
 
     private function getPricing(int $platformProductId, ?int $variantId, int $qty): PlatformPricing
@@ -243,9 +257,7 @@ class CartController extends Controller
         $pricing = $query->first();
         
         if (!$pricing) {
-            $pricing = PlatformPricing::where('platform_product_id', $platformProductId)
-                ->where('status', 'active')
-                ->first();
+            abort(422, 'Pricing not found for selected variant');
         }
         
         if (!$pricing) {
