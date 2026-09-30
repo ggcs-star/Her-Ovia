@@ -26,20 +26,20 @@
     style="scrollbar-width: thin; scrollbar-color: #e2e8f0 #f1f5f9"
 >
        @php
-    $organization = \App\Models\Organization::where('is_active', 1)->first();
-@endphp
+            $organization = \App\Models\Organization::where('is_active', 1)->first();
+        @endphp
 
-@if($organization && $organization->logo_url)
-<div class="h-[64px] flex items-center px-5 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">
-    <div class="flex items-center justify-center w-full">
-        <img
-            src="{{ $organization->logo_url }}"
-            alt="{{ $organization->name }}"
-            class="h-10 w-auto object-contain"
-        >
-    </div>
-</div>
-@endif
+        @if($organization && $organization->logo_url)
+        <div class="h-[82px] flex items-center px-5 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">
+            <div class="flex items-center justify-center w-full">
+                <img
+                    src="{{ $organization->logo_url }}"
+                    alt="{{ $organization->name }}"
+                    class="h-14 w-auto object-contain"
+                >
+            </div>
+        </div>
+        @endif
 
     <nav class="px-3 py-4 space-y-0.5">
         <a href="{{ route('dashboard') }}"
@@ -95,7 +95,22 @@
             </svg>
             <span class="text-sm">App Settings</span>
         </a>
+<a href="{{ admin_route('product-reviews.index') }}"
+   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
+   {{ request()->routeIs('product-reviews.*') ? 'bg-[#8B2452] text-white font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-[#8B2452]' }}">
 
+    <svg class="w-5 h-5 stroke-[2.5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            d="M7 8h10M7 12h6m8-1a8 8 0 11-16 0 8 8 0 0116 0z"
+        />
+    </svg>
+
+    <span class="text-sm">Product Reviews</span>
+
+</a>
         <a href="{{ admin_route('notification-settings.index') }}"
    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200
    {{ request()->routeIs('notification-settings.*') ? 'bg-[#8B2452] text-white font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-[#8B2452]' }}">

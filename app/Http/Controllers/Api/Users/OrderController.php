@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Throwable;
 use App\Helpers\S3Helper;
+use App\Models\Organization;
+use Barryvdh\DomPDF\Facade\Pdf;
 class OrderController extends Controller
 {
     public function index(Request $request): JsonResponse
@@ -96,7 +98,46 @@ class OrderController extends Controller
             ], 500);
         }
     }
+    public function invoice($orderId)
+    {
+        try {
+            $order = Order::with([
+                'items.product',
+                'items.variant',
+                'user',
+                'shippingAddress',
+                'billingAddress',
+                'payment'
+            ])
+            ->where('user_id', auth()->id())
+            ->findOrFail($orderId);
 
+            $company = Organization::first();
+
+            $pdf = Pdf::loadView(
+                'invoices.order-invoice',
+                compact('order', 'company')
+            )
+            ->setPaper('a4', 'portrait')
+            ->setOption('isRemoteEnabled', true);
+
+            return response($pdf->output(), 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'inline; filename="' . $order->order_number . '-invoice.pdf"');
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     public function cancel(Request $request, $orderId): JsonResponse
     {
         try {

@@ -14,12 +14,12 @@
 @endphp
 
 @if($organization && $organization->logo_url)
-<div class="h-[64px] flex items-center px-5 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">
+<div class="h-[82px] flex items-center px-5 bg-gradient-to-r from-white to-gray-50 border-b border-gray-100">
     <div class="flex items-center justify-center w-full">
         <img
             src="{{ $organization->logo_url }}"
             alt="{{ $organization->name }}"
-            class="h-10 w-auto object-contain"
+            class="h-14 w-auto object-contain"
         >
     </div>
 </div>
