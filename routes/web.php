@@ -35,6 +35,7 @@ use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\InventoryController;    
 use Google\Client;
 use App\Services\Amazon\AmazonInventoryService;
+use App\Http\Controllers\Admin\ProductReviewController;
 
 Route::get('/test-amazon-inventory', function () {
 
@@ -138,7 +139,21 @@ Route::middleware(['auth', 'verified.email', 'log.login.activity', 'role:admin']
     ->name('admin.')
     ->group(function () {
 
+Route::prefix('product-reviews')
+    ->name('product-reviews.')
+    ->controller(ProductReviewController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
 
+        Route::post('/bulk-delete', 'bulkDelete')->name('bulk-delete');
+
+        Route::get('/{productReview}', 'show')->name('show');
+        Route::get('/{productReview}/edit', 'edit')->name('edit');
+        Route::put('/{productReview}', 'update')->name('update');
+        Route::delete('/{productReview}', 'destroy')->name('destroy');
+    });
   Route::get('/inventory/dashboard', [InventoryController::class, 'dashboard'])
             ->name('inventory.dashboard');
 
