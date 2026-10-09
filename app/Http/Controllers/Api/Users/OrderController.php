@@ -45,16 +45,13 @@ class OrderController extends Controller
             return $order;
         });
 
-            return response()->json([
-                'success' => true,
-                'data' => $orders
-            ]);
+            return $this->successResponse(
+                'Orders fetched successfully',
+                $orders
+            );
 
         } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -80,22 +77,19 @@ class OrderController extends Controller
             return $item;
         });
 
-            return response()->json([
-                'success' => true,
-                'data' => $order
-            ]);
+            return $this->successResponse(
+                'Order fetched successfully',
+                $order
+            );
 
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found'
-            ], 404);
+            return $this->errorResponse(
+                'Order not found',
+                404
+            );
 
         } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
     public function invoice($orderId)
@@ -126,16 +120,13 @@ class OrderController extends Controller
                 ->header('Content-Disposition', 'inline; filename="' . $order->order_number . '-invoice.pdf"');
 
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found'
-            ], 404);
+            return $this->errorResponse(
+                'Order not found',
+                404
+            );
 
         } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong: ' . $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
     public function cancel(Request $request, $orderId): JsonResponse
@@ -147,10 +138,10 @@ class OrderController extends Controller
                 ->findOrFail($orderId);
 
             if (!in_array($order->status, ['pending', 'confirmed'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order cannot be cancelled'
-                ], 400);
+                return $this->errorResponse(
+                    'Order cannot be cancelled',
+                    400
+                );
             }
 
             $order->status = 'cancelled';
@@ -158,30 +149,26 @@ class OrderController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Order cancelled successfully',
-                'data' => [
+            return $this->successResponse(
+                'Order cancelled successfully',
+                [
                     'order' => [
                         'id' => $order->id,
                         'status' => $order->status
                     ]
                 ]
-            ]);
+            );
             
         } catch (ModelNotFoundException $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found'
-            ], 404);
+            return $this->errorResponse(
+                'Order not found',
+                404
+            );
             
         } catch (Throwable $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong'
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -190,27 +177,24 @@ class OrderController extends Controller
         try {
             $order = Order::where('user_id', auth()->id())
                 ->findOrFail($orderId);
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'Order tracking fetched successfully',
+                [
                     'order_number' => $order->order_number,
                     'status' => $order->status,
                     'tracking_number' => $order->tracking_number ?? null,
                     'estimated_delivery' => $order->estimated_delivery ?? null,
                 ]
-            ]);
+            );
             
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found'
-            ], 404);
+            return $this->errorResponse(
+                'Order not found',
+                404
+            );
             
         } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Something went wrong'
-            ], 500);
+            return $this->errorResponse();
         }
     }
 }

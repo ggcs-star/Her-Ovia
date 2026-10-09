@@ -17,9 +17,9 @@ class ProfileController extends Controller
         try {
             $user = auth()->user();
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'Profile fetched successfully',
+                [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
@@ -27,7 +27,7 @@ class ProfileController extends Controller
                     'profile_image' => $user->profile_image,
                     'created_at' => $user->created_at?->toISOString(),
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
 
@@ -36,10 +36,7 @@ class ProfileController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to fetch profile details'
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -78,10 +75,9 @@ class ProfileController extends Controller
             $user->update($updateData);
             $user->refresh();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile updated successfully',
-                'data' => [
+            return $this->successResponse(
+                'Profile updated successfully',
+                [
                     'id'            => $user->id,
                     'name'          => $user->name,
                     'email'         => $user->email,
@@ -90,7 +86,7 @@ class ProfileController extends Controller
                     'profile_image' => $user->profile_image,
                     'created_at'    => $user->created_at?->toISOString(),
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
 
@@ -99,10 +95,7 @@ class ProfileController extends Controller
                 'user_id' => auth()->id(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to update profile'
-            ], 500);
+            return $this->errorResponse();
         }
     }
     
@@ -189,17 +182,16 @@ class ProfileController extends Controller
                 $user->save();
             }
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile image removed successfully',
-                'data' => [
+            return $this->successResponse(
+                'Profile image removed successfully',
+                [
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
                     'mobile' => $user->mobile,
-                    'profile_image' => null
+                    'profile_image' => null,
                 ]
-            ]);
+            );
             
         } catch (Throwable $e) {
             Log::error('Remove profile image error', [
@@ -207,10 +199,7 @@ class ProfileController extends Controller
                 'user_id' => auth()->id()
             ]);
             
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to remove image'
-            ], 500);
+            return $this->errorResponse();
         }
     }
 

@@ -25,10 +25,12 @@ class PageImpressionController extends Controller
 
         $page->increment('impression_count');
 
-        return response()->json([
-            'success' => true,
-            'page_name' => $page->page_name,
-            'impression_count' => $page->fresh()->impression_count
-        ]);
+        return $this->successResponse(
+            'Page impression recorded successfully',
+            [
+                'page_name' => $page->page_name,
+                'impression_count' => $page->fresh()->impression_count,
+            ]
+        );
     }
 }

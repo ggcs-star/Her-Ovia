@@ -55,17 +55,17 @@ class ProductReviewController extends Controller
             fn (ProductReview $review) => $this->transformReview($review)
         );
 
-        return response()->json([
-            'success' => true,
-            'data' => [
+        return $this->successResponse(
+            'Reviews fetched successfully',
+            [
                 'reviews' => $reviews,
                 'summary' => [
                     'average_rating' => $averageRating,
                     'rating_count' => $ratingCount,
                     'distribution' => $distribution,
                 ],
-            ],
-        ]);
+            ]
+        );
     }
 
     public function store(Request $request): JsonResponse
@@ -132,10 +132,10 @@ class ProductReviewController extends Controller
         $user = $request->user();
 
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated.',
-            ], 401);
+            return $this->errorResponse(
+                'Unauthenticated.',
+                401
+            );
         }
 
         $purchase = $this->reviewService->verifyCustomerPurchase(
@@ -198,7 +198,7 @@ class ProductReviewController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Your review has been submitted successfully.',
+                'message' => 'Review submitted successfully.',
                 'data' => [
                     'review' => $this->transformReview($review),
                     
@@ -244,15 +244,15 @@ class ProductReviewController extends Controller
             ->with('user:id,name')
             ->first();
 
-        return response()->json([
-            'success' => true,
-            'exists' => (bool) $review,
-            'data' => [
+        return $this->successResponse(
+            'Review status fetched successfully',
+            [
+                'exists' => (bool) $review,
                 'review' => $review
                     ? $this->transformReview($review)
                     : null,
-            ],
-        ]);
+            ]
+        );
     }
 
     public function update(Request $request, ProductReview $productReview): JsonResponse
@@ -260,10 +260,10 @@ class ProductReviewController extends Controller
         $user = $request->user();
 
         if (!$user || $productReview->user_id !== $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You are not allowed to edit this review.',
-            ], 403);
+            return $this->errorResponse(
+                'You are not allowed to edit this review.',
+                403
+            );
         }
 
         $validated = $request->validate([
@@ -369,7 +369,7 @@ class ProductReviewController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Your review has been updated successfully.',
+                'message' => 'Review updated successfully.',
                 'data' => [
                     'review' => $this->transformReview($productReview),
                 ],

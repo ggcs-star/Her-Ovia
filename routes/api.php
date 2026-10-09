@@ -21,6 +21,7 @@
     use App\Http\Controllers\Api\Users\PageImpressionController;
     use App\Http\Controllers\Api\Users\ShippingController;
     use App\Http\Controllers\Api\Users\ProductReviewController;
+    use App\Http\Controllers\Api\Users\WishlistController;
     Route::post('/shipping/check', [ShippingController::class, 'check'])
     ->middleware('throttle:30,1');
 
@@ -150,6 +151,10 @@
         Route::get('/categories/order', [UserCategoryController::class,'index']);
 
         Route::post('/categories/order', [UserCategoryController::class,'save']);
+
+        Route::get('/wishlist', [WishlistController::class, 'index']);
+        Route::post('/wishlist', [WishlistController::class, 'store']);
+        Route::delete('/wishlist/{productId}', [WishlistController::class, 'destroy']);
     });
 
 
