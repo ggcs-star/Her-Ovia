@@ -35,10 +35,22 @@ class ShippingController extends Controller
                 'Delivery availability fetched successfully',
                 $result
             );
+        
         } catch (Throwable $e) {
             report($e);
 
-            return $this->errorResponse();
+            if ($e->getMessage() === 'SHIPROCKET_CREDENTIALS_MISSING') {
+                return $this->errorResponse(
+                    'Shiprocket credentials are not configured.',
+                    503
+                );
+            }
+
+            return $this->errorResponse(
+                'Something went wrong. Please try again later.',
+                502
+            );
         }
+
     }
 }
