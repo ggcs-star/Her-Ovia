@@ -19,15 +19,15 @@ class OrganizationController extends Controller
                 ->first();
 
             if (!$organization) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Organization not found',
-                ], 404);
+                return $this->errorResponse(
+                    'Organization not found',
+                    404
+                );
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'Organization details fetched successfully',
+                [
                     'email'          => $organization->email,
                     'mobile'         => $organization->mobile,
                     'website'        => $organization->website,
@@ -37,8 +37,8 @@ class OrganizationController extends Controller
                     'country'        => $organization->country,
                     'pincode'        => $organization->pincode,
                     'business_hours' => $organization->business_hours,
-                ],
-            ]);
+                ]
+            );
 
         } catch (Throwable $e) {
 
@@ -46,10 +46,7 @@ class OrganizationController extends Controller
                 'message' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to fetch organization details',
-            ], 500);
+            return $this->errorResponse();
         }
     }
 }

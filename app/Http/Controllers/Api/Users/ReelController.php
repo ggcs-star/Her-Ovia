@@ -56,24 +56,19 @@ class ReelController extends Controller
             ];
         });
 
-        return response()->json([
-            'status' => true,
-            'data' => $data,
-            'pagination' => [
-                'current_page' => $reels->currentPage(),
-                'last_page' => $reels->lastPage(),
-                'per_page' => $reels->perPage(),
-                'total' => $reels->total()
+        return $this->successResponse(
+            'Reels fetched successfully',
+            [
+                'reels' => $data,
+                'pagination' => [
+                    'current_page' => $reels->currentPage(),
+                    'last_page' => $reels->lastPage(),
+                    'per_page' => $reels->perPage(),
+                    'total' => $reels->total(),
+                ],
             ]
-        ]);
+        );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SINGLE REEL
-    |--------------------------------------------------------------------------
-    */
 
     public function show($id, Request $request)
     {
@@ -87,40 +82,33 @@ class ReelController extends Controller
             ->where('ip_address',$ip)
             ->exists();
 
-        return response()->json([
-            'status' => true,
-            'data' => [
-                'id' => $reel->id,
-                'title' => $reel->title,
-                'description' => $reel->description,
-                'video' => S3Helper::url($reel->video),
+        return $this->successResponse(
+        'Reel fetched successfully',
+        [
+            'id' => $reel->id,
+            'title' => $reel->title,
+            'description' => $reel->description,
+            'video' => S3Helper::url($reel->video),
 
-                'views' => $reel->views_count,
-                'likes' => $reel->likes_count,
-                'shares' => $reel->shares_count,
-                'comments' => $reel->comments_count,
+            'views' => $reel->views_count,
+            'likes' => $reel->likes_count,
+            'shares' => $reel->shares_count,
+            'comments' => $reel->comments_count,
 
-                'is_liked' => $isLiked,
+            'is_liked' => $isLiked,
 
-                'product' => [
-                    'id' => $product->id ?? null,
-                    'name' => $product->name ?? null,
-                    'slug' => $product->slug ?? null,
-                    'price' => optional($reel->platformProduct)->platform_price ?? null,
-                    'image' => $product->image ? asset($product->image) : null,
-                ],
+            'product' => [
+                'id' => $product->id ?? null,
+                'name' => $product->name ?? null,
+                'slug' => $product->slug ?? null,
+                'price' => optional($reel->platformProduct)->platform_price ?? null,
+                'image' => $product->image ? asset($product->image) : null,
+            ],
 
-                'created_at' => $reel->created_at
-            ]
-        ]);
+            'created_at' => $reel->created_at
+        ]
+    );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | VIEW (ANTI SPAM 🔥)
-    |--------------------------------------------------------------------------
-    */
 
     public function increaseViews($id, Request $request)
     {
@@ -136,18 +124,13 @@ class ReelController extends Controller
             cache()->put("reel_view_{$id}_{$ip}", true, 3600); // 1 hour
         }
 
-        return response()->json([
-            'status' => true,
-            'views' => $reel->views_count
-        ]);
+        return $this->successResponse(
+            'Reel views updated successfully',
+            [
+                'views' => $reel->views_count,
+            ]
+        );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | LIKE / UNLIKE
-    |--------------------------------------------------------------------------
-    */
 
     public function like($id, Request $request)
     {
@@ -164,11 +147,13 @@ class ReelController extends Controller
             $existing->delete();
             $reel->decrement('likes_count');
 
-            return response()->json([
-                'status'=>true,
-                'liked'=>false,
-                'likes'=>$reel->likes_count
-            ]);
+            return $this->successResponse(
+                'Reel unliked successfully',
+                [
+                    'liked' => false,
+                    'likes' => $reel->likes_count,
+                ]
+            );
         }
 
         ReelLike::create([
@@ -178,19 +163,14 @@ class ReelController extends Controller
 
         $reel->increment('likes_count');
 
-        return response()->json([
-            'status'=>true,
-            'liked'=>true,
-            'likes'=>$reel->likes_count
-        ]);
+        return $this->successResponse(
+            'Reel liked successfully',
+            [
+                'liked' => true,
+                'likes' => $reel->likes_count,
+            ]
+        );
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SHARE
-    |--------------------------------------------------------------------------
-    */
 
     public function share($id)
     {
@@ -198,18 +178,14 @@ class ReelController extends Controller
 
         $reel->increment('shares_count');
 
-        return response()->json([
-            'status' => true,
-            'shares' => $reel->shares_count
-        ]);
+        return $this->successResponse(
+            'Reel shared successfully',
+            [
+                'shares' => $reel->shares_count,
+            ]
+        );
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | COMMENTS (NEW 🔥🔥🔥)
-    |--------------------------------------------------------------------------
-    */
 public function comments($id)
 {
     $comments = ReelComment::with('user')
@@ -237,10 +213,10 @@ public function comments($id)
             ];
         });
 
-    return response()->json([
-        'status'=>true,
-        'data'=>$comments
-    ]);
+            return $this->successResponse(
+            'Reel comments fetched successfully',
+            $comments
+        );
 }
    public function addComment($id, Request $request)
 {
@@ -258,9 +234,9 @@ public function comments($id)
 
     Reel::where('id',$id)->increment('comments_count');
 
-    return response()->json([
-        'status'=>true,
-        'message'=>'Comment added'
-    ]);
+    return $this->successResponse(
+        'Comment added successfully',
+        null
+    );
 }
 }

@@ -88,9 +88,9 @@ class ProductController extends Controller
             });
         });
 
-        return response()->json([
-            'success' => true,
-            'data' => [
+        return $this->successResponse(
+            'Products fetched successfully',
+            [
                 'products' => $products->getCollection()
                     ->map(fn ($p) => ProductListTransformer::transform($p)),
                 'pagination' => [
@@ -99,11 +99,11 @@ class ProductController extends Controller
                     'total' => $products->total(),
                     'last_page' => $products->lastPage(),
                 ],
-            ],
-        ]);
+            ]
+        );
     } catch (Throwable $e) {
         Log::error('Landing Product API Error', ['error' => $e->getMessage()]);
-        return response()->json(['success' => false, 'message' => 'Something went wrong'], 500);
+        return $this->errorResponse();
     }
 }
 
@@ -205,13 +205,16 @@ public function show(string $slug): JsonResponse
         $click->increment('click_count');
         $product->click_count = $click->fresh()->click_count;
 
-        return response()->json([
-            'success' => true,
-            'data' => ProductDetailTransformer::transform($product),
-        ]);
+        return $this->successResponse(
+            'Product fetched successfully',
+            ProductDetailTransformer::transform($product)
+        );
     } catch (Throwable $e) {
         Log::error('Product Detail API Error', ['error' => $e->getMessage()]);
-        return response()->json(['success' => false, 'message' => 'Product not found'], 404);
+        return $this->errorResponse(
+            'Product not found',
+            404
+        );
     }
 }
   public function showById(int $product_id): JsonResponse
@@ -292,16 +295,16 @@ public function show(string $slug): JsonResponse
         $click->increment('click_count');
         $product->click_count = $click->fresh()->click_count;
 
-        return response()->json([
-            'success' => true,
-            'data' => ProductDetailTransformer::transform($product),
-        ]);
+        return $this->successResponse(
+            'Product fetched successfully',
+            ProductDetailTransformer::transform($product)
+        );
 
     } catch (Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Product not found',
-        ], 404);
+        return $this->errorResponse(
+            'Product not found',
+            404
+        );
     }
 }
 public function topSelling(): JsonResponse
@@ -387,12 +390,14 @@ public function topSelling(): JsonResponse
                 ->get();
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'products' => $products->map(fn ($p) => ProductListTransformer::transform($p))
-            ],
-        ]);
+        return $this->successResponse(
+            'Top selling products fetched successfully',
+            [
+                'products' => $products->map(
+                    fn ($p) => ProductListTransformer::transform($p)
+                ),
+            ]
+        );
 
     } catch (\Throwable $e) {
 
@@ -400,10 +405,7 @@ public function topSelling(): JsonResponse
             'error' => $e->getMessage()
         ]);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Something went wrong'
-        ], 500);
+        return $this->errorResponse();
     }
 }
 
@@ -505,12 +507,14 @@ public function bestSeller(): JsonResponse
                 ->values();
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'products' => $products->map(fn($p) => ProductListTransformer::transform($p))
+        return $this->successResponse(
+            'Best seller products fetched successfully',
+            [
+                'products' => $products->map(
+                    fn ($p) => ProductListTransformer::transform($p)
+                ),
             ]
-        ]);
+        );
 
     } catch (\Throwable $e) {
 
@@ -518,10 +522,7 @@ public function bestSeller(): JsonResponse
             'error' => $e->getMessage()
         ]);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Something went wrong'
-        ], 500);
+        return $this->errorResponse();
     }
 }
 
@@ -533,37 +534,28 @@ public function bestSeller(): JsonResponse
             $query = trim((string) $request->get('q', ''));
 
             if ($query === '') {
-                return response()->json([
-                    'success' => true,
-                    'data' => [
+                return $this->successResponse(
+                    'Search suggestions fetched successfully',
+                    [
                         'products' => [],
                         'categories' => [],
                         'subcategories' => [],
                         'brands' => [],
-                    ],
-                ]);
+                    ]
+                );
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $searchService->suggestions($query, 6),
-            ]);
+            return $this->successResponse(
+                'Search suggestions fetched successfully',
+                $searchService->suggestions($query, 6)
+            );
         } catch (Throwable $e) {
             Log::error('Search suggestion error', [
                 'query' => $request->get('q'),
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Suggestion failed',
-                'data' => [
-                    'products' => [],
-                    'categories' => [],
-                    'subcategories' => [],
-                    'brands' => [],
-                ],
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -575,20 +567,20 @@ public function bestSeller(): JsonResponse
             $query = trim((string) $request->get('q', ''));
 
             if ($query === '') {
-                return response()->json([
-                    'success' => true,
-                    'data' => [
+                return $this->successResponse(
+                    'Search results fetched successfully',
+                    [
                         'products' => [],
                         'pagination' => null,
-                    ],
-                ]);
+                    ]
+                );
             }
 
             $products = $searchService->search($query, 12);
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+           return $this->successResponse(
+                'Search results fetched successfully',
+                [
                     'products' => $products
                         ->map(fn ($product) => ProductListTransformer::transform($product))
                         ->values(),
@@ -598,18 +590,15 @@ public function bestSeller(): JsonResponse
                         'total' => $products->count(),
                         'last_page' => 1,
                     ],
-                ],
-            ]);
+                ]
+            );
         } catch (Throwable $e) {
             Log::error('Search error', [
                 'query' => $request->q,
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Search failed',
-            ], 500);
+            return $this->errorResponse();
         }
     }
     
@@ -621,14 +610,14 @@ public function bestSeller(): JsonResponse
             $query = trim($request->get('q',''));
 
             if ($query === '') {
-                return response()->json([
-                    'success'=>true,
-                    'data'=>[
-                        'categories'=>[],
-                        'subcategories'=>[],
-                        'products'=>[]
+                return $this->successResponse(
+                    'Search results fetched successfully',
+                    [
+                        'categories' => [],
+                        'subcategories' => [],
+                        'products' => [],
                     ]
-                ]);
+                );
             }
 
             $categories = Category::query()
@@ -663,14 +652,14 @@ public function bestSeller(): JsonResponse
                 ->get()
                 ->map(fn($p)=>ProductListTransformer::transform($p));
 
-            return response()->json([
-                'success'=>true,
-                'data'=>[
-                    'categories'=>$categories,
-                    'subcategories'=>$subcategories,
-                    'products'=>$products
+            return $this->successResponse(
+                'Search results fetched successfully',
+                [
+                    'categories' => $categories,
+                    'subcategories' => $subcategories,
+                    'products' => $products,
                 ]
-            ]);
+            );
 
         } catch(Throwable $e){
 
@@ -678,10 +667,7 @@ public function bestSeller(): JsonResponse
                 'error'=>$e->getMessage()
             ]);
 
-            return response()->json([
-                'success'=>false,
-                'message'=>'Search failed'
-            ],500);
+            return $this->errorResponse();
         }
     }
     public function searchRedirect(Request $request): JsonResponse
@@ -691,10 +677,10 @@ public function bestSeller(): JsonResponse
         $query = trim($request->get('q', ''));
 
         if ($query === '') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Empty search'
-            ], 400);
+            return $this->errorResponse(
+                'Empty search',
+                400
+            );
         }
 
         $subcategory = Category::query()
@@ -704,11 +690,13 @@ public function bestSeller(): JsonResponse
             ->first();
 
         if ($subcategory) {
-            return response()->json([
-                'success' => true,
-                'type' => 'subcategory',
-                'id' => $subcategory->id
-            ]);
+            return $this->successResponse(
+                'Search redirect found successfully',
+                [
+                    'type' => 'subcategory',
+                    'id' => $subcategory->id,
+                ]
+            );
         }
 
         $category = Category::query()
@@ -723,11 +711,13 @@ public function bestSeller(): JsonResponse
 
         if ($category && $category->children->count() > 0) {
             $firstSubcategory = $category->children->first();
-            return response()->json([
-                'success' => true,
-                'type' => 'subcategory',
-                'id' => $firstSubcategory->id  
-            ]);
+            return $this->successResponse(
+                'Search redirect found successfully',
+                [
+                    'type' => 'subcategory',
+                    'id' => $firstSubcategory->id,
+                ]
+            );
         }
 
         $product = Product::query()
@@ -739,11 +729,13 @@ public function bestSeller(): JsonResponse
             ->first();
 
         if ($product) {
-            return response()->json([
-                'success' => true,
-                'type' => 'product',
-                'slug' => $product->slug
-            ]);
+            return $this->successResponse(
+                'Search redirect found successfully',
+                [
+                    'type' => 'product',
+                    'slug' => $product->slug,
+                ]
+            );
         }
 
         $subcategory = Category::query()
@@ -753,11 +745,13 @@ public function bestSeller(): JsonResponse
             ->first();
 
         if ($subcategory) {
-            return response()->json([
-                'success' => true,
-                'type' => 'subcategory',
-                'id' => $subcategory->id
-            ]);
+            return $this->successResponse(
+                'Search redirect found successfully',
+                [
+                    'type' => 'subcategory',
+                    'id' => $subcategory->id,
+                ]
+            );
         }
 
         $category = Category::query()
@@ -772,11 +766,13 @@ public function bestSeller(): JsonResponse
 
         if ($category && $category->children->count() > 0) {
             $firstSubcategory = $category->children->first();
-            return response()->json([
-                'success' => true,
-                'type' => 'subcategory',
-                'id' => $firstSubcategory->id
-            ]);
+            return $this->successResponse(
+                'Search redirect found successfully',
+                [
+                    'type' => 'subcategory',
+                    'id' => $firstSubcategory->id,
+                ]
+            );
         }
 
         $product = Product::query()
@@ -788,18 +784,22 @@ public function bestSeller(): JsonResponse
             ->first();
 
         if ($product) {
-            return response()->json([
-                'success' => true,
-                'type' => 'product',
-                'slug' => $product->slug
-            ]);
+            return $this->successResponse(
+                'Search redirect found successfully',
+                [
+                    'type' => 'product',
+                    'slug' => $product->slug,
+                ]
+            );
         }
 
-        return response()->json([
-            'success' => true,
-            'type' => 'search',
-            'query' => $query
-        ], 200);
+        return $this->successResponse(
+            'Search redirect completed successfully',
+            [
+                'type' => 'search',
+                'query' => $query,
+            ]
+        );
 
     } catch (\Throwable $e) {
         Log::error('Search redirect error', [
@@ -807,10 +807,7 @@ public function bestSeller(): JsonResponse
             'error' => $e->getMessage()
         ]);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Something went wrong'
-        ], 500);
+        return $this->errorResponse();
     }
 }
 }

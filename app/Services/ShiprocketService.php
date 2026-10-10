@@ -16,18 +16,21 @@ class ShiprocketService
 
     public function __construct()
     {
+        
         $this->baseUrl = rtrim(
-            config('services.shiprocket.base_url'),
+            (string) config('services.shiprocket.base_url', ''),
             '/'
         );
 
-        $this->email = config('services.shiprocket.email');
-        $this->password = config('services.shiprocket.password');
-        $this->pickupPincode = config('services.shiprocket.pickup_pincode');
+        $this->email = (string) config('services.shiprocket.email', '');
+        $this->password = (string) config('services.shiprocket.password', '');
+        $this->pickupPincode = (string) config('services.shiprocket.pickup_pincode', '');
+
         $this->defaultWeight = (float) config(
             'services.shiprocket.default_weight',
             0.5
         );
+
     }
 
     /**
@@ -78,6 +81,17 @@ class ShiprocketService
         ?float $weight = null
     ): array {
         $deliveryPincode = trim($deliveryPincode);
+        
+        if (
+            empty($this->baseUrl) ||
+            empty($this->email) ||
+            empty($this->password)
+        ) {
+            throw new RuntimeException(
+                'SHIPROCKET_CREDENTIALS_MISSING'
+            );
+        }
+
 
         if (!preg_match('/^\d{6}$/', $deliveryPincode)) {
             throw new RuntimeException(

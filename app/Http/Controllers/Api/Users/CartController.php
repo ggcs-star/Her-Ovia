@@ -10,7 +10,7 @@ use App\Models\PlatformPricing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+
 use Throwable;
 
 class CartController extends Controller
@@ -24,18 +24,18 @@ class CartController extends Controller
                 return $this->emptyCartResponse($cart);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'Cart fetched successfully',
+                [
                     'cart_id' => $cart->id,
                     'items' => $cart->items->map(fn ($item) => $this->formatCartItem($item)),
                     'cart_total' => $this->cartTotal($cart),
                     'items_count' => $this->cartItemsCount($cart),
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
-            return $this->errorResponse('Get Cart API Error', $e);
+            return $this->errorResponse();
         }
     }
 
@@ -104,18 +104,17 @@ class CartController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Items added to cart successfully',
-                'data' => [
+            return $this->successResponse(
+                'Items added to cart successfully',
+                [
                     'cart_total' => $this->cartTotal($cart),
                     'items_count' => $this->cartItemsCount($cart),
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
             DB::rollBack();
-            return $this->errorResponse('Add to Cart API Error', $e);
+            return $this->errorResponse();
         }
     }
 
@@ -161,7 +160,7 @@ class CartController extends Controller
 
         } catch (Throwable $e) {
             DB::rollBack();
-            return $this->errorResponse('Update Cart Item API Error', $e);
+            return $this->errorResponse();
         }
     }
 
@@ -179,18 +178,17 @@ class CartController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Item removed from cart successfully',
-                'data' => [
+            return $this->successResponse(
+                'Item removed from cart successfully',
+                [
                     'cart_total' => $this->cartTotal($cart),
                     'items_count' => $this->cartItemsCount($cart),
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
             DB::rollBack();
-            return $this->errorResponse('Remove Cart Item API Error', $e);
+            return $this->errorResponse();
         }
     }
 
@@ -304,28 +302,15 @@ class CartController extends Controller
 
     private function emptyCartResponse(?Cart $cart = null): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'cart_id' => $cart?->id,   
+        return $this->successResponse(
+            'Cart fetched successfully',
+            [
+                'cart_id' => $cart?->id,
                 'items' => [],
                 'cart_total' => 0,
                 'items_count' => 0,
             ]
-        ]);
-    }
-
-    private function errorResponse(string $context, Throwable $e): JsonResponse
-    {
-        Log::error($context, [
-            'message' => $e->getMessage(),
-            'exception' => $e,
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Something went wrong. Please try again.',
-        ], 500);
+        );
     }
 
 

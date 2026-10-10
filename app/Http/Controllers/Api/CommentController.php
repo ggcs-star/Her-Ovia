@@ -8,9 +8,6 @@ use App\Models\Comment;
 
 class CommentController extends Controller
 {
-    /**
-     * ➕ Add Comment
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -25,51 +22,45 @@ class CommentController extends Controller
             'comment' => $request->comment
         ]);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Comment added',
-            'data' => $comment
-        ]);
+        return $this->successResponse(
+            'Comment added successfully',
+            $comment
+        );
     }
 
-    /**
-     * 📥 Get Comments
-     */
     public function index($link_id)
     {
         $comments = Comment::where('link_id', $link_id)
             ->latest()
             ->get();
 
-        return response()->json([
-            'status' => true,
-            'data' => $comments
-        ]);
+        return $this->successResponse(
+            'Comments fetched successfully',
+            $comments
+        );
     }
 
-    /**
-     * 🔢 Count
-     */
+   
     public function count($link_id)
     {
         $count = Comment::where('link_id', $link_id)->count();
 
-        return response()->json([
-            'status' => true,
-            'count' => $count
-        ]);
+        return $this->successResponse(
+            'Comment count fetched successfully',
+            [
+                'count' => $count,
+            ]
+        );
     }
 
-    /**
-     * ❌ Delete (simple)
-     */
+
     public function destroy($id)
     {
         Comment::where('id', $id)->delete();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Deleted'
-        ]);
+        return $this->successResponse(
+            'Comment deleted successfully',
+            null
+        );
     }
 }

@@ -9,6 +9,7 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\AuthenticationException;
 
 class Handler extends ExceptionHandler
 {
@@ -20,6 +21,21 @@ class Handler extends ExceptionHandler
 
     public function register(): void
     {
+        $this->renderable(function (AuthenticationException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Something went wrong',
+                    'data' => [],
+                    'errors' => [],
+                ], 401);
+            }
+
+            return redirect()->guest(
+                url()->previous() ?? url()->current()
+            );
+        });
+
         $this->reportable(function (Throwable $e) {
             Log::error('Web Exception', [
                 'message' => $e->getMessage(),
@@ -34,19 +50,31 @@ class Handler extends ExceptionHandler
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Too many attempts. Please wait and try again.'
+                    'message' => 'Something went wrong',
+                    'data' => [],
+                    'errors' => [],
                 ], 429);
             }
-            return back()->with('error', 'Too many attempts. Please wait and try again.');
+
+            return back()->with(
+                'error',
+                'Too many attempts. Please wait and try again.'
+            );
         });
 
-        $this->renderable(function (ModelNotFoundException|NotFoundHttpException $e, $request) {
+        $this->renderable(function (
+            ModelNotFoundException|NotFoundHttpException $e,
+            $request
+        ) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Record not found.'
+                    'message' => 'Something went wrong',
+                    'data' => [],
+                    'errors' => [],
                 ], 404);
             }
+
             return redirect()
                 ->to(url()->previous() ?? url()->current())
                 ->with('error', 'Requested record not found.');
@@ -54,14 +82,14 @@ class Handler extends ExceptionHandler
 
         $this->renderable(function (ValidationException $e, $request) {
             if ($request->expectsJson()) {
-                $errors = $e->errors();
-                $firstError = collect($errors)->first();
                 return response()->json([
                     'success' => false,
-                    'message' => is_array($firstError) ? $firstError[0] : 'Validation error',
-                    'errors' => $errors
+                    'message' => 'Something went wrong',
+                    'data' => [],
+                    'errors' => $e->errors(),
                 ], 422);
             }
+
             return redirect()
                 ->back()
                 ->withErrors($e->errors())
@@ -70,35 +98,46 @@ class Handler extends ExceptionHandler
 
         $this->renderable(function (Throwable $e, $request) {
             $errorMessage = $e->getMessage();
-            
-            if (str_contains($errorMessage, 'Duplicate entry') || 
+
+            if (
+                str_contains($errorMessage, 'Duplicate entry') ||
                 str_contains($errorMessage, 'already exists') ||
-                str_contains($errorMessage, 'unique')) {
-                
+                str_contains($errorMessage, 'unique')
+            ) {
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'This email is already registered. Please login instead.'
+                        'message' => 'Something went wrong',
+                        'data' => [],
+                        'errors' => [],
                     ], 409);
                 }
+
                 return redirect()
                     ->back()
                     ->withInput()
-                    ->with('error', 'This email is already registered. Please login instead.');
+                    ->with(
+                        'error',
+                        'This email is already registered. Please login instead.'
+                    );
             }
-            
-            // Other errors
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage ?: 'Something went wrong. Please try again.'
+                    'message' => 'Something went wrong',
+                    'data' => [],
+                    'errors' => [],
                 ], 500);
             }
-            
+
             return redirect()
                 ->to(url()->previous() ?? url()->current())
                 ->withInput()
-                ->with('error', $errorMessage ?: 'Something went wrong. Please try again.');
+                ->with(
+                    'error',
+                    $errorMessage ?: 'Something went wrong. Please try again.'
+                );
         });
     }
 }

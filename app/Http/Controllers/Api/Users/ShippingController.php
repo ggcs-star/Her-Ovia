@@ -31,17 +31,26 @@ class ShippingController extends Controller
                 (bool) ($validated['cod'] ?? false)
             );
 
-            return response()->json([
-                'success' => true,
-                'data' => $result,
-            ]);
+            return $this->successResponse(
+                'Delivery availability fetched successfully',
+                $result
+            );
+        
         } catch (Throwable $e) {
             report($e);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to check delivery availability right now.',
-            ], 500);
+            if ($e->getMessage() === 'SHIPROCKET_CREDENTIALS_MISSING') {
+                return $this->errorResponse(
+                    'Shiprocket credentials are not configured.',
+                    503
+                );
+            }
+
+            return $this->errorResponse(
+                'Something went wrong. Please try again later.',
+                502
+            );
         }
+
     }
 }

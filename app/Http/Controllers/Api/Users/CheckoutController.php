@@ -34,10 +34,7 @@ class CheckoutController extends Controller
                 ->firstOrFail();
 
             if ($cart->items->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cart is empty'
-                ], 422);
+                return $this->errorResponse('Cart is empty', 422);
             }
 
             $subtotal = $cart->items->sum('subtotal');
@@ -92,97 +89,85 @@ class CheckoutController extends Controller
                 ->where('type', 'shipping')
                 ->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'cart' => [
-                        'currency' => 'INR',
-                        'subtotal' => round($subtotal, 2),
-                        'tax' => $tax,
-                        'shipping' => $shipping,
-                        'discount' => round($discount, 2),
-                        'platform_fee' => round($platformFee, 2),
-                        'total' => $total,
-                        'items_count' => $cart->items->sum('quantity'),
-                        'coupon_code' => $request->coupon_code ?? null,
+            return $this->successResponse(
+            'Checkout summary fetched successfully',
+            [
+                'cart' => [
+                    'currency' => 'INR',
+                    'subtotal' => round($subtotal, 2),
+                    'tax' => $tax,
+                    'shipping' => $shipping,
+                    'discount' => round($discount, 2),
+                    'platform_fee' => round($platformFee, 2),
+                    'total' => $total,
+                    'items_count' => $cart->items->sum('quantity'),
+                    'coupon_code' => $request->coupon_code ?? null,
+                ],
+                'shipping_addresses' => $addresses,
+                'payment_methods' => [
+                    [
+                        'id' => 1,
+                        'name' => 'Cash on Delivery',
+                        'type' => 'cod',
+                        'is_available' => true,
                     ],
-                    'shipping_addresses' => $addresses,
-                    'payment_methods' => [
-                        [
-                            'id' => 1,
-                            'name' => 'Cash on Delivery',
-                            'type' => 'cod',
-                            'is_available' => true,
-                        ],
-                        [
-                            'id' => 2,
-                            'name' => 'Online Payment',
-                            'type' => 'online',
-                            'is_available' => true,
-                        ],
+                    [
+                        'id' => 2,
+                        'name' => 'Online Payment',
+                        'type' => 'online',
+                        'is_available' => true,
                     ],
-                ]
-            ]);
-
+                ],
+            ]
+        );
         } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ], 500);
+            return $this->errorResponse();
         }
     }
-private function getShiprocketShipping(
-    UserAddress $shippingAddress,
-    string $paymentMethod
-): array {
-    $settings = DeliverySetting::getSettings();
+    private function getShiprocketShipping(
+        UserAddress $shippingAddress,
+        string $paymentMethod
+    ): array {
+        $settings = DeliverySetting::getSettings();
 
-    if (!$settings) {
-        throw new \RuntimeException('Delivery settings not configured.');
+        if (!$settings) {
+            throw new \RuntimeException('Delivery settings not configured.');
+        }
+
+        try {
+            $shiprocket = app(ShiprocketService::class);
+
+            $shippingData = $shiprocket->checkServiceability(
+                $shippingAddress->postal_code,
+                $paymentMethod === 'cod'
+            );
+
+        } catch (\Throwable $e) {
+
+            return [
+                'serviceable' => true,
+                'shipping' => (float) $settings->delivery_fee,
+                'delivery_date' => null,
+                'source' => 'delivery_setting',
+            ];
+        }
+        if (!($shippingData['serviceable'] ?? false)) {
+            throw new \RuntimeException(
+                'Delivery is not available at this pincode.'
+            );
+        }
+
+        if (($shippingData['shipping'] ?? null) === null) {
+            return [
+                'serviceable' => true,
+                'shipping' => (float) $settings->delivery_fee,
+                'delivery_date' => null,
+                'source' => 'delivery_setting',
+            ];
+        }
+
+        return $shippingData;
     }
-
-    try {
-        $shiprocket = app(ShiprocketService::class);
-
-        $shippingData = $shiprocket->checkServiceability(
-            $shippingAddress->postal_code,
-            $paymentMethod === 'cod'
-        );
-
-    } catch (\Throwable $e) {
-
-        // Shiprocket API/credentials error
-        // Use Delivery Settings delivery fee
-        return [
-            'serviceable' => true,
-            'shipping' => (float) $settings->delivery_fee,
-            'delivery_date' => null,
-            'source' => 'delivery_setting',
-        ];
-    }
-
-    // Shiprocket responded successfully,
-    // but pincode is not serviceable
-    if (!($shippingData['serviceable'] ?? false)) {
-        throw new \RuntimeException(
-            'Delivery is not available at this pincode.'
-        );
-    }
-
-    // Shipping charge missing from Shiprocket response
-    if (($shippingData['shipping'] ?? null) === null) {
-        return [
-            'serviceable' => true,
-            'shipping' => (float) $settings->delivery_fee,
-            'delivery_date' => null,
-            'source' => 'delivery_setting',
-        ];
-    }
-
-    return $shippingData;
-}
     public function placeOrder(Request $request): JsonResponse
     {
         $request->validate([
@@ -257,26 +242,24 @@ private function getShiprocketShipping(
                 'billing_address_id' => $billingAddress->id,
                 'payment_method' => 'cod',
             ]);
-            // Update coupon usage after successful order creation
-if ($request->filled('coupon_code')) {
+        if ($request->filled('coupon_code')) {
 
-    $coupon = Coupon::where('code', strtoupper($request->coupon_code))->first();
+            $coupon = Coupon::where('code', strtoupper($request->coupon_code))->first();
 
-    if ($coupon) {
+            if ($coupon) {
 
-        $coupon->increment('used_count');
+                $coupon->increment('used_count');
 
-        // Disable coupon if usage limit reached
-        if (
-            $coupon->usage_limit &&
-            ($coupon->used_count + 1) >= $coupon->usage_limit
-        ) {
-            $coupon->update([
-                'is_active' => false
-            ]);
+                if (
+                    $coupon->usage_limit &&
+                    ($coupon->used_count + 1) >= $coupon->usage_limit
+                ) {
+                    $coupon->update([
+                        'is_active' => false
+                    ]);
+                }
+            }
         }
-    }
-}
 
             foreach ($cart->items as $item) {
 
@@ -322,10 +305,9 @@ if ($request->filled('coupon_code')) {
 
             DB::commit();
             SendNewOrderNotificationJob::dispatch($order)->afterCommit();
-            return response()->json([
-                'success' => true,
-                'message' => 'Order placed successfully',
-                'data' => [
+            return $this->successResponse(
+                'Order placed successfully',
+                [
                     'order' => [
                         'id' => $order->id,
                         'order_number' => $order->order_number,
@@ -335,16 +317,12 @@ if ($request->filled('coupon_code')) {
                         'created_at' => $order->created_at,
                     ]
                 ]
-            ]);
-
+            );
         } catch (Throwable $e) {
 
             DB::rollBack();
 
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -363,24 +341,24 @@ if ($request->filled('coupon_code')) {
             return 0;
         }
         // Coupon usage limit
-if (
-    $coupon->usage_limit &&
-    $coupon->used_count >= $coupon->usage_limit
-) {
-    return 0;
-}
+        if (
+            $coupon->usage_limit &&
+            $coupon->used_count >= $coupon->usage_limit
+        ) {
+            return 0;
+        }
 
-// One time per user
-if ($coupon->one_time_per_user) {
+        // One time per user
+        if ($coupon->one_time_per_user) {
 
-    $alreadyUsed = Order::where('user_id', auth()->id())
-        ->where('coupon_code', strtoupper($coupon->code))
-        ->exists();
+            $alreadyUsed = Order::where('user_id', auth()->id())
+                ->where('coupon_code', strtoupper($coupon->code))
+                ->exists();
 
-    if ($alreadyUsed) {
-        return 0;
-    }
-}
+            if ($alreadyUsed) {
+                return 0;
+            }
+        }
 
         if ($coupon->min_order_amount && $subtotal < $coupon->min_order_amount) {
             return 0;
@@ -402,6 +380,10 @@ if ($coupon->one_time_per_user) {
     }
     public function createRazorpayOrder(Request $request): JsonResponse
     {
+        \Log::error('RAZORPAY CREATE ORDER HIT', [
+        'payload' => $request->all(),
+        'user_id' => auth()->id(),
+    ]);
         $request->validate([
             'shipping_address_id' => 'required|integer',
             'billing_address_id' => 'required|integer',
@@ -427,10 +409,7 @@ if ($coupon->one_time_per_user) {
                 ->firstOrFail();
 
             if ($cart->items->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cart is empty'
-                ], 422);
+                return $this->errorResponse('Cart is empty', 422);
             }
 
             $subtotal = $cart->items->sum('subtotal');
@@ -481,6 +460,7 @@ if ($coupon->one_time_per_user) {
                 config('services.razorpay.key'),
                 config('services.razorpay.secret')
             );
+            
             $razorpayOrder = $razorpay->order->create([
                 'receipt' => 'pay_' . $payment->id,
                 'amount' => (int) round($total * 100),
@@ -495,23 +475,18 @@ if ($coupon->one_time_per_user) {
                 'razorpay_order_id' => $razorpayOrder['id']
             ]);
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'Razorpay order created successfully',
+                [
                     'payment_id' => $payment->id,
                     'razorpay_order_id' => $razorpayOrder['id'],
                     'amount' => (float) $total,
                     'currency' => 'INR',
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ], 500);
+            return $this->errorResponse();
         }
     }
     public function verifyRazorpayPayment(Request $request): JsonResponse
@@ -537,10 +512,10 @@ if ($coupon->one_time_per_user) {
 
                 DB::rollBack();
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Payment already processed'
-                ]);
+                return $this->successResponse(
+                    'Payment already processed',
+                    null
+                );
             }
 
             $api = new Api(
@@ -569,7 +544,7 @@ if ($coupon->one_time_per_user) {
                 throw new \Exception('Invalid currency');
             }
 
-            if ($paymentDetails['amount'] != ($payment->amount * 100)) {
+            if ((int) $paymentDetails['amount'] !== (int) round($payment->amount * 100)) {
                 throw new \Exception('Amount mismatch');
             }
 
@@ -577,13 +552,12 @@ if ($coupon->one_time_per_user) {
 
                 DB::commit();
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Order already created',
-                    'data' => [
+                return $this->successResponse(
+                    'Order already created',
+                    [
                         'order_id' => $payment->order_id
                     ]
-                ]);
+                );
             }
 
             $cart = Cart::where('user_id', $userId)
@@ -727,27 +701,27 @@ if ($coupon->one_time_per_user) {
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Payment verified & order placed',
-                'data' => [
+           return $this->successResponse(
+                'Payment verified and order placed successfully',
+                [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number
                 ]
-            ]);
+            );
 
         } catch (SignatureVerificationError $e) {
 
             DB::rollBack();
-
+ \Log::error('RAZORPAY VERIFY ERROR', [
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ]);
             if (isset($payment)) {
                 $payment->update(['payment_status' => 'failed']);
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Signature verification failed'
-            ], 400);
+            return $this->errorResponse('Signature verification failed', 400);
 
         } catch (Throwable $e) {
 
@@ -757,10 +731,7 @@ if ($coupon->one_time_per_user) {
                 $payment->update(['payment_status' => 'failed']);
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
 

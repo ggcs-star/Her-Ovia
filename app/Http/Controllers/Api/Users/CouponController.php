@@ -42,10 +42,10 @@ class CouponController extends Controller
                 ];
             });
 
-        return response()->json([
-            'success' => true,
-            'data' => $coupons
-        ]);
+        return $this->successResponse(
+            'Coupons fetched successfully',
+            $coupons
+        );
     }
     
     public function apply(Request $request): JsonResponse
@@ -72,10 +72,10 @@ class CouponController extends Controller
                 ->first();
 
             if (!$coupon) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or inactive coupon'
-                ], 422);
+                return $this->errorResponse(
+                    'Invalid or inactive coupon',
+                    422
+                );
             }
             // ================= PRODUCT RESTRICTION =================
 
@@ -84,10 +84,10 @@ if ($coupon->product_id) {
 
     if ($coupon->product_id != $request->product_id) {
 
-        return response()->json([
-            'success' => false,
-            'message' => 'This coupon is valid only for selected product.'
-        ], 422);
+        return $this->errorResponse(
+            'This coupon is valid only for selected product.',
+            422
+        );
 
     }
 }
@@ -97,10 +97,10 @@ if ($coupon->subcategory_id) {
 
     if ($coupon->subcategory_id != $request->category_id) {
 
-        return response()->json([
-            'success' => false,
-            'message' => 'This coupon is valid only for selected sub category.'
-        ], 422);
+        return $this->errorResponse(
+            'This coupon is valid only for selected sub category.',
+            422
+        );
 
     }
 }
@@ -114,10 +114,10 @@ if ($coupon->category_id) {
 
     if (!in_array($request->category_id, $childIds)) {
 
-        return response()->json([
-            'success' => false,
-            'message' => 'This coupon is valid only for selected category.'
-        ], 422);
+        return $this->errorResponse(
+            'This coupon is valid only for selected category.',
+            422
+        );
 
     }
 }
@@ -125,51 +125,51 @@ if ($coupon->category_id) {
             $now = now();
 
             if ($coupon->starts_at && $now->lt($coupon->starts_at)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Coupon not started yet'
-                ], 422);
+                return $this->errorResponse(
+                    'Coupon not started yet',
+                    422
+                );
             }
 
             if ($coupon->expires_at && $now->gt($coupon->expires_at)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Coupon expired'
-                ], 422);
+                return $this->errorResponse(
+                    'Coupon expired',
+                    422
+                );
             }
 
             // ✅ Frontend se aaya cart_total use karo
             $cartTotal = $request->cart_total;
 
             if ($coupon->min_order_amount !== null && $cartTotal < $coupon->min_order_amount) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Minimum order amount of ₹' . number_format($coupon->min_order_amount, 2) . ' required'
-                ], 422);
+                return $this->errorResponse(
+                    'Minimum order amount of ₹' . number_format($coupon->min_order_amount, 2) . ' required',
+                    422
+                );
             }
             
             // Bank coupon validation
             if ($coupon->coupon_type === 'BANK') {
                 if (!$request->card_type) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Card type required for this coupon'
-                    ], 422);
+                    return $this->errorResponse(
+                        'Card type required for this coupon',
+                        422
+                    );
                 }
                 if ($coupon->bank_id) {
                     if (!$request->bank_id || $coupon->bank_id != $request->bank_id) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Coupon not valid for selected bank'
-                        ], 422);
+                        return $this->errorResponse(
+                            'Coupon not valid for selected bank',
+                            422
+                        );
                     }
                 }
 
                 if ($coupon->card_type !== 'both' && $coupon->card_type !== $request->card_type) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Coupon not valid for this card type'
-                    ], 422);
+                    return $this->errorResponse(
+                        'Coupon not valid for this card type',
+                        422
+                    );
                 }
             }
 
@@ -185,30 +185,29 @@ if ($coupon->category_id) {
 
             $finalTotal = max($cartTotal - $discount, 0);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Coupon applied successfully',
-                'data' => [
+            return $this->successResponse(
+                'Coupon applied successfully',
+                [
                     'cart_total' => round($cartTotal, 2),
                     'discount' => round($discount, 2),
                     'final_total' => round($finalTotal, 2),
                     'coupon_code' => $coupon->code,
                     'coupon_type' => $coupon->coupon_type
                 ]
-            ]);
+            );
 
-        } catch (Throwable $e) {
+       } catch (Throwable $e) {
 
-    throw $e;
+        return $this->errorResponse();
 
-}
+    }
     }
 
     public function remove(): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Coupon removed'
-        ]);
+        return $this->successResponse(
+            'Coupon removed successfully',
+            null
+        );
     }
 }

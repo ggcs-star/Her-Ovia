@@ -305,7 +305,7 @@
         <div class="order-row">
             <span class="label">📦 Order number</span>
             <span class="value">
-                {{ $order->order_number ?? 'MHR-2026-001' }}
+                {{ $order->order_number ?? 'HER-2026-001' }}
             </span>
         </div>
 

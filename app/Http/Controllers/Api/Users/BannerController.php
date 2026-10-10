@@ -31,18 +31,13 @@ class BannerController extends Controller
 
             $banners = $query->orderBy('sort_order')->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $banners,
-                'message' => 'Banners retrieved successfully'
-            ], 200);
+            return $this->successResponse(
+                'Banners fetched successfully',
+                $banners
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve banners',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -62,24 +57,15 @@ class BannerController extends Controller
                 ->first();
 
             if (!$banner) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Banner not found'
-                ], 404);
+                return $this->errorResponse('Banner not found', 404);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $banner,
-                'message' => 'Banner retrieved successfully'
-            ], 200);
-
+            return $this->successResponse(
+                'Banner fetched successfully',
+                $banner
+            );
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve banner',
-                'error' => $e->getMessage()
-            ], 500);
+           return $this->errorResponse();
         }
     }
 
@@ -87,10 +73,7 @@ class BannerController extends Controller
     {
         try {
             if (!in_array($page, ['home', 'category', 'product'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid page type'
-                ], 400);
+                return $this->errorResponse('Invalid page type', 400);
             }
 
             $banners = Banner::where('status', 1)
@@ -106,18 +89,13 @@ class BannerController extends Controller
                 ->orderBy('sort_order')
                 ->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $banners,
-                'message' => "Banners for {$page} page retrieved successfully"
-            ], 200);
+            return $this->successResponse(
+                "Banners for {$page} page fetched successfully",
+                $banners
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve banners',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
 
@@ -125,10 +103,7 @@ class BannerController extends Controller
     {
         try {
             if (!in_array($position, ['hero', 'mid', 'bottom'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid position type'
-                ], 400);
+                return $this->errorResponse('Invalid position type', 400);
             }
 
             $banners = Banner::where('status', 1)
@@ -144,18 +119,13 @@ class BannerController extends Controller
                 ->orderBy('sort_order')
                 ->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $banners,
-                'message' => "Banners for {$position} position retrieved successfully"
-            ], 200);
+            return $this->successResponse(
+                "Banners for {$position} position fetched successfully",
+                $banners
+            );
 
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to retrieve banners',
-                'error' => $e->getMessage()
-            ], 500);
+            return $this->errorResponse();
         }
     }
 }
