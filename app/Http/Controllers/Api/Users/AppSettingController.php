@@ -27,15 +27,12 @@ class AppSettingController extends Controller
             );
 
             if (!$setting) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'App settings not found'
-                ], 404);
+                return $this->errorResponse('App settings not found', 404);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'App settings fetched successfully',
+                [
                     'app_name' => $setting->app_name,
 
                     'app_logo' => $setting->app_logo_url,
@@ -44,7 +41,7 @@ class AppSettingController extends Controller
 
                     'is_active' => $setting->is_active,
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
 
@@ -52,10 +49,7 @@ class AppSettingController extends Controller
                 'message' => $e->getMessage(),
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to fetch app settings'
-            ], 500);
+            return $this->errorResponse();
         }
     }
 }

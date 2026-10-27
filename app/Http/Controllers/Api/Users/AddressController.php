@@ -24,16 +24,16 @@ class AddressController extends Controller
                 ->get()
                 ->map(fn($address) => $this->formatAddress($address));
 
-            return response()->json([
-                'success' => true,
-                'data' => [
+            return $this->successResponse(
+                'Addresses fetched successfully',
+                [
                     'addresses' => $addresses,
                     'total' => $addresses->count(),
                 ]
-            ]);
+            );
         } catch (Throwable $e) {
             $this->logError('Get Address', $e);
-            return $this->errorResponse('Unable to fetch addresses');
+            return $this->errorResponse();
         }
     }
     public function show(int $addressId): JsonResponse
@@ -43,15 +43,15 @@ class AddressController extends Controller
 
             $address = $this->findUserAddress($addressId, $user->id);
 
-            return response()->json([
-                'success' => true,
-                'data' => $this->formatAddress($address)
-            ]);
+           return $this->successResponse(
+                'Address fetched successfully',
+                $this->formatAddress($address)
+            );
 
         } catch (Throwable $e) {
             $this->logError('Get Address', $e, auth()->id(), $addressId);
 
-            return $this->errorResponse('Unable to fetch address');
+            return $this->errorResponse();
         }
     }
 
@@ -75,18 +75,18 @@ class AddressController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Address added successfully',
-                'data' => [
+            return $this->successResponse(
+                'Address added successfully',
+                [
                     'address' => $this->formatAddress($address)
-                ]
-            ], 201);
+                ],
+                201
+            );
 
         } catch (Throwable $e) {
             DB::rollBack();
             $this->logError('Add Address', $e, $request->user()?->id);
-            return $this->errorResponse('Unable to add address');
+            return $this->errorResponse();
         }
     }
 
@@ -109,18 +109,17 @@ class AddressController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Address updated successfully',
-                'data' => [
+            return $this->successResponse(
+                'Address updated successfully',
+                [
                     'address' => $this->formatAddress($address)
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
             DB::rollBack();
             $this->logError('Update Address', $e, $request->user()?->id, $addressId);
-            return $this->errorResponse('Unable to update address');
+            return $this->errorResponse();
         }
     }
 
@@ -148,15 +147,14 @@ class AddressController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Address deleted successfully'
-            ]);
+            return $this->successResponse(
+                'Address deleted successfully'
+            );
 
         } catch (Throwable $e) {
             DB::rollBack();
             $this->logError('Delete Address', $e, auth()->id(), $addressId);
-            return $this->errorResponse('Unable to delete address');
+            return $this->errorResponse();
         }
     }
 
@@ -185,10 +183,7 @@ class AddressController extends Controller
             ->first();
 
         if (!$address) {
-            abort(response()->json([
-                'success' => false,
-                'message' => 'Address not found'
-            ], 404));
+            abort($this->errorResponse('Address not found', 404));
         }
 
         return $address;
@@ -227,14 +222,6 @@ class AddressController extends Controller
             'address_id' => $addressId,
         ]);
     }
-
-    private function errorResponse(string $message): JsonResponse
-    {
-        return response()->json([
-            'success' => false,
-            'message' => $message
-        ], 500);
-    }
     public function setDefault($addressId): JsonResponse
     {
         try {
@@ -246,10 +233,7 @@ class AddressController extends Controller
                 ->first();
 
             if (!$address) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Address not found'
-                ], 404);
+                return $this->errorResponse('Address not found', 404);
             }
 
             UserAddress::where('user_id', $user->id)
@@ -260,13 +244,12 @@ class AddressController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Default address updated successfully',
-                'data' => [
+            return $this->successResponse(
+                'Default address updated successfully',
+                [
                     'address' => $this->formatAddress($address)
                 ]
-            ]);
+            );
 
         } catch (Throwable $e) {
             DB::rollBack();
@@ -275,10 +258,7 @@ class AddressController extends Controller
                 'user_id' => auth()->id(),
                 'address_id' => $addressId
             ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Unable to set default address'
-            ], 500);
+            return $this->errorResponse();
         }
     }
 }

@@ -33,10 +33,10 @@ class UserCategoryController extends Controller
                 ->get();
         }
 
-        return response()->json([
-            'success'=>true,
-            'data'=>$categories
-        ]);
+        return $this->successResponse(
+            'Categories fetched successfully',
+            $categories
+        );
     }
 
     public function save(Request $request): JsonResponse
@@ -60,10 +60,10 @@ class UserCategoryController extends Controller
             );
         }
 
-        return response()->json([
-            'success'=>true,
-            'message'=>'Category order saved'
-        ]);
+        return $this->successResponse(
+            'Category order saved successfully',
+            null
+        );
     }
 
 }

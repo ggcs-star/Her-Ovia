@@ -25,6 +25,7 @@ class CategoryController extends Controller
 
             return response()->json([
                 'success' => true,
+                'message' => 'Categories fetched successfully',
                 'data' => $categories->map(fn ($cat) => $this->formatCategory($cat)),
             ]);
 
@@ -35,8 +36,9 @@ class CategoryController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Unable to fetch categories'
-            ], 500);
+                'message' => 'Something went wrong',
+                'data' => null
+        ], 500);
         }
     }
 
@@ -51,6 +53,7 @@ class CategoryController extends Controller
 
             return response()->json([
                 'success' => true,
+                'message' => 'Category fetched successfully',
                 'data' => $this->formatCategory($category),
             ]);
 
@@ -63,6 +66,7 @@ class CategoryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Category not found',
+                'data' => null
             ], 404);
         }
     }
@@ -90,6 +94,7 @@ class CategoryController extends Controller
 
         return response()->json([
             'success' => true,
+            'message' => 'Products fetched successfully',
             'data' => [
                 'category' => [
                     'id' => $category->id,
